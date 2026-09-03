@@ -4,7 +4,7 @@ Prototipo escolar de gestión veterinaria y expedientes clínicos para Veterinar
 
 ## Estado
 
-T1: revisión documental y acuerdos preparada para revisión. Todavía no existe código de la aplicación ni servicios desplegados.
+T1 y T2: revisión documental, acuerdos y registro de participantes y necesidades preparados. La validación clínica permanece pendiente. Todavía no existe código de la aplicación ni servicios desplegados.
 
 El desarrollo se entrega una tarea por vez cuando las dependencias lo permiten. Las fechas de referencia son las del cronograma documental; el historial de Git queda a cargo del usuario.
 
@@ -21,5 +21,6 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 ## Documentación
 
 - [Revisión de documentos y acuerdos — T1](docs/gestion/T01_revision_documental.md)
+- [Participantes y necesidades — T2](docs/gestion/T02_participantes_necesidades.md)
 
 No se incorporan credenciales, bases clínicas reales ni respaldos de pacientes al repositorio.
