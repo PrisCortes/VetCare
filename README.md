@@ -4,7 +4,9 @@ Prototipo escolar de gestión veterinaria y expedientes clínicos para Veterinar
 
 ## Estado
 
-T1 a T6 preparados. T7 reúne el paquete de revisión de requisitos; la aprobación y las tres decisiones de captura de T5 permanecen pendientes. La validación clínica permanece pendiente. Todavía no existe código de la aplicación ni servicios desplegados.
+T1 a T6 preparados; paquete T7 y arquitectura T8 disponibles. La aprobación de requisitos y las tres decisiones de captura de T5 permanecen pendientes. La validación clínica permanece pendiente. Todavía no existe código de la aplicación ni servicios desplegados.
+
+El trabajo incluye desarrollar el sistema completo: web, API PHP, MariaDB central, Electron para Windows, SQLite local, sincronización, pruebas e instalador. Las tareas T8–T14 preparan el diseño; la implementación comienza con T15, siguiendo las asignaciones y ventanas del cronograma.
 
 El desarrollo se entrega una tarea por vez cuando las dependencias lo permiten. Las fechas de referencia son las del cronograma documental; el historial de Git queda a cargo del usuario.
 
@@ -27,5 +29,6 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Funciones y condiciones del sistema — T5](docs/gestion/T05_funciones_condiciones.md)
 - [Organización y prioridades — T6](docs/gestion/T06_organizacion_prioridades.md)
 - [Revisión y aprobación de requisitos — T7](docs/gestion/T07_revision_aprobacion_requisitos.md)
+- [Arquitectura del sistema — T8](docs/arquitectura/T08_arquitectura_sistema.md)
 
 No se incorporan credenciales, bases clínicas reales ni respaldos de pacientes al repositorio.
