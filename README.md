@@ -4,7 +4,7 @@ Prototipo escolar de gestión veterinaria y expedientes clínicos para Veterinar
 
 ## Estado
 
-T1 a T6: revisión documental, acuerdos, participantes, necesidades, formatos, proceso, funciones candidatas y organización de las 52 tareas preparados. T5 incluye decisiones de captura pendientes de confirmar; T7 será la revisión de requisitos. La validación clínica permanece pendiente. Todavía no existe código de la aplicación ni servicios desplegados.
+T1 a T6 preparados. T7 reúne el paquete de revisión de requisitos; la aprobación y las tres decisiones de captura de T5 permanecen pendientes. La validación clínica permanece pendiente. Todavía no existe código de la aplicación ni servicios desplegados.
 
 El desarrollo se entrega una tarea por vez cuando las dependencias lo permiten. Las fechas de referencia son las del cronograma documental; el historial de Git queda a cargo del usuario.
 
@@ -26,5 +26,6 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Proceso de atención propuesto — T4](docs/gestion/T04_proceso_atencion.md)
 - [Funciones y condiciones del sistema — T5](docs/gestion/T05_funciones_condiciones.md)
 - [Organización y prioridades — T6](docs/gestion/T06_organizacion_prioridades.md)
+- [Revisión y aprobación de requisitos — T7](docs/gestion/T07_revision_aprobacion_requisitos.md)
 
 No se incorporan credenciales, bases clínicas reales ni respaldos de pacientes al repositorio.
