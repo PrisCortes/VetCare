@@ -1,0 +1,106 @@
+'use strict';
+// Prototipo de interacción: datos ficticios en memoria, sin persistencia o servidor.
+const owners = [
+ { id: 'o1', nombre: 'Ana Martínez', telefono: 'Sin teléfono registrado', localidad: 'Apan', domicilio: '' },
+ { id: 'o2', nombre: 'Luis Hernández', telefono: 'Sin teléfono registrado', localidad: 'Apan', domicilio: '' },
+ { id: 'o3', nombre: 'Sofía Ramírez', telefono: 'Sin teléfono registrado', localidad: 'Almoloya', domicilio: '' },
+ { id: 'o4', nombre: 'Pedro López', telefono: 'Sin teléfono registrado', localidad: 'Apan', domicilio: '' }
+];
+const patients = [
+ { id: 'p1', nombre: 'Luna', especie: 'Perro', raza: 'Labrador', propietario: 'o1', edad: '3 años · estimada', peso: '24.5 kg', ultima: '18 nov 2026', estado: 'Confirmado (ejemplo)' },
+ { id: 'p2', nombre: 'Milo', especie: 'Gato', raza: 'Doméstico', propietario: 'o2', edad: '2 años · estimada', peso: '4.2 kg', ultima: '17 nov 2026', estado: 'Confirmado (ejemplo)' },
+ { id: 'p3', nombre: 'Estrella', especie: 'Vaca', raza: 'Holstein', propietario: 'o3', edad: '5 años · estimada', peso: 'Sin medición', ultima: '16 nov 2026', estado: 'Pendiente (ejemplo)' },
+ { id: 'p4', nombre: 'Rayo', especie: 'Caballo', raza: 'Sin especificar', propietario: 'o4', edad: 'Edad no registrada', peso: 'Sin medición', ultima: '14 nov 2026', estado: 'Confirmado (ejemplo)' },
+ { id: 'p5', nombre: 'Nala', especie: 'Perro', raza: 'Mestizo', propietario: 'o1', edad: '1 año · estimada', peso: '8.6 kg', ultima: '12 nov 2026', estado: 'Confirmado (ejemplo)' }
+];
+let selected = 'p1', offline = false, filter = 'Todos', query = '', detailTab = 'historial', carnetTab = 'vacunas', toastTimer;
+const records = [{ paciente: 'p1', fecha: '2026-11-18', diagnostico: 'Consulta de revisión (ejemplo)', tratamiento: 'Sin tratamiento registrado en esta demostración.', observaciones: 'Registro ficticio para revisar la lectura del expediente.', peso: '24.5', temperatura: '', fc: '', fr: '', pendiente: false }];
+const main = document.getElementById('main');
+const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+const icon = name => `<svg aria-hidden="true"><use href="#${name}"/></svg>`;
+const ownerOf = patient => owners.find(owner => owner.id === patient.propietario);
+const patient = () => patients.find(item => item.id === selected) || patients[0];
+const formatDate = value => new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value + 'T12:00:00'));
+const status = pending => `<span class="badge ${pending ? 'pending' : ''}">${icon(pending ? 'clock' : 'check')}${pending ? 'Pendiente (ejemplo)' : 'Confirmado (ejemplo)'}</span>`;
+const heading = (eyebrow, title, subtitle, action = '') => `<div class="page-heading"><div><span class="eyebrow">${eyebrow}</span><h1>${title}</h1><p>${subtitle}</p></div>${action}</div>`;
+function notify(message) { const toast = document.getElementById('toast'); toast.textContent = message; toast.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.hidden = true; }, 5500); }
+function navigate(route, focus = false) { if (location.hash === '#' + route) render(); else location.hash = route; if (focus) setTimeout(() => main.focus(), 0); }
+function listRows() {
+ const found = patients.filter(item => (filter === 'Todos' || item.especie === filter) && `${item.nombre} ${item.raza} ${ownerOf(item).nombre}`.toLocaleLowerCase('es').includes(query.toLocaleLowerCase('es')));
+ return found.length ? found.map(item => `<tr><td><div class="patient-cell"><span class="animal-avatar ${item.especie.toLowerCase()}">${esc(item.nombre.slice(0, 2).toUpperCase())}</span><div><strong>${esc(item.nombre)}</strong><small>${esc(item.raza)}</small></div></div></td><td>${esc(item.especie)}</td><td>${esc(ownerOf(item).nombre)}</td><td>${esc(item.ultima)}</td><td>${status(item.estado.startsWith('Pendiente'))}</td><td><button class="text-button" data-patient="${item.id}" aria-label="Abrir expediente de ${esc(item.nombre)}">Ver ficha ${icon('arrow')}</button></td></tr>`).join('') : '<tr><td colspan="6"><div class="empty"><strong>No encontramos pacientes</strong>Prueba con otro nombre o cambia el filtro.</div></td></tr>';
+}
+function renderPatients() {
+ main.innerHTML = heading('DIRECTORIO CLÍNICO', 'Pacientes', 'Cada paciente, con su historia siempre a la mano.', `<button class="button" data-open="patient">${icon('plus')}Nuevo paciente</button>`) +
+ `<div class="summary"><div class="summary-card"><div><small>Pacientes registrados</small><strong>${patients.length.toString().padStart(2, '0')}</strong><p>En esta demostración</p></div><span class="summary-icon">${icon('paw')}</span></div><div class="summary-card"><div><small>Propietarios</small><strong>${owners.length.toString().padStart(2, '0')}</strong><p>Información vinculada</p></div><span class="summary-icon">${icon('users')}</span></div><div class="summary-card accent"><div><small>CUIDADO CONTINUO</small><strong>Un historial completo</strong><p>Consultas y carnet en un solo lugar</p></div><span class="summary-icon">${icon('folder')}</span></div></div>
+ <section class="panel" aria-label="Directorio de pacientes"><div class="panel-heading"><h2>Directorio de pacientes</h2><small>Datos de ejemplo</small></div><div class="toolbar"><label class="search-box">${icon('search')}<input id="patient-search" value="${esc(query)}" placeholder="Buscar paciente o propietario…" aria-label="Buscar paciente o propietario"></label><div class="filters" aria-label="Filtrar por especie">${['Todos','Perro','Gato','Vaca','Caballo','Borrego','Otra'].map(value => `<button class="filter ${filter === value ? 'active' : ''}" data-filter="${value}" aria-pressed="${filter === value}">${value === 'Perro' ? 'Perros' : value === 'Gato' ? 'Gatos' : value}</button>`).join('')}</div></div><div class="table-wrap"><table><thead><tr><th>Paciente</th><th>Especie</th><th>Propietario</th><th>Última atención</th><th>Estado de ejemplo</th><th><span class="optional">Acción</span></th></tr></thead><tbody id="patients-body">${listRows()}</tbody></table></div><div class="table-footer"><span>Selecciona un paciente para consultar su expediente.</span><span>VetCare / Directorio</span></div></section>`;
+}
+function renderOwners() {
+ main.innerHTML = heading('PERSONAS Y VÍNCULOS', 'Propietarios', 'Los datos de contacto se registran una vez y se reutilizan.', `<button class="button" data-open="owner">${icon('plus')}Nuevo propietario</button>`) + `<section class="panel"><div class="panel-heading"><h2>Directorio de propietarios</h2><small>${owners.length} registros de ejemplo</small></div><div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Contacto</th><th>Localidad</th><th>Pacientes vinculados</th></tr></thead><tbody>${owners.map(owner => `<tr><td><div class="patient-cell"><span class="animal-avatar">${esc(owner.nombre.split(' ').map(s => s[0]).join('').slice(0,2))}</span><strong>${esc(owner.nombre)}</strong></div></td><td>${esc(owner.telefono || 'Sin teléfono registrado')}</td><td>${esc(owner.localidad || 'Sin localidad registrada')}</td><td>${patients.filter(item => item.propietario === owner.id).map(item => `<button class="text-button" data-patient="${item.id}">${esc(item.nombre)} ${icon('arrow')}</button>`).join('') || '<span class="hint">Sin pacientes vinculados</span>'}</td></tr>`).join('')}</tbody></table></div></section>`;
+}
+function profile() { const item = patient(); return `<aside class="panel patient-profile"><span class="animal-avatar ${item.especie.toLowerCase()}">${esc(item.nombre.slice(0,2).toUpperCase())}</span><h2>${esc(item.nombre)}</h2><p>${esc(item.especie)} · ${esc(item.raza)}</p><span class="badge neutral">Paciente de demostración</span><dl class="data-list"><div><dt>Edad de ejemplo</dt><dd>${esc(item.edad)}</dd></div><div><dt>Último peso de ejemplo</dt><dd>${esc(item.peso)}</dd></div><div><dt>Fuente del peso</dt><dd>${item.peso === 'Sin medición' ? 'Sin registro' : 'Registro ficticio · ' + esc(item.ultima)}</dd></div></dl><div class="profile-divider"></div><span class="eyebrow">PROPIETARIO</span><dl class="data-list"><div><dt>Nombre</dt><dd>${esc(ownerOf(item).nombre)}</dd></div><div><dt>Contacto</dt><dd>${esc(ownerOf(item).telefono || 'Sin teléfono registrado')}</dd></div><div><dt>Localidad</dt><dd>${esc(ownerOf(item).localidad || 'Sin localidad registrada')}</dd></div></dl></aside>`; }
+function timeline() {
+ const found = records.filter(record => record.paciente === selected).slice().sort((a,b) => b.fecha.localeCompare(a.fecha));
+ return found.length ? `<div class="timeline">${found.map(record => `<article class="timeline-event"><span class="event-icon">${icon('folder')}</span><div class="event-content"><div class="event-top"><h3>${esc(record.diagnostico)}</h3><time datetime="${record.fecha}">${esc(formatDate(record.fecha))}</time></div><p>${esc(record.tratamiento || 'Sin tratamiento registrado.')}</p>${record.observaciones ? `<p>${esc(record.observaciones)}</p>` : ''}<div class="event-meta">${record.peso ? `<span>Peso: ${esc(record.peso)} kg</span>` : '<span>Peso no registrado</span>'}<span>Datos ficticios</span></div><div style="margin-top:12px">${status(record.pendiente)}</div></div></article>`).join('')}</div>` : '<div class="empty"><strong>Aún no hay consultas en esta vista</strong>Registra una consulta de ejemplo para revisar el flujo.</div>';
+}
+function renderDetail() {
+ const item = patient();
+ main.innerHTML = `<a class="back" href="#pacientes">← Volver a pacientes</a>` + heading('EXPEDIENTE CLÍNICO', `${esc(item.nombre)} <span class="optional">${esc(item.especie)}</span>`, 'Antecedentes, atención y seguimiento del paciente.', `<button class="button" data-route="consulta">${icon('plus')}Nueva consulta</button>`) + `<div class="detail-grid">${profile()}<div class="detail-body"><section class="panel"><div class="tabs" role="tablist" aria-label="Secciones del expediente"><button role="tab" aria-selected="${detailTab === 'historial'}" aria-controls="detail-content" class="${detailTab === 'historial' ? 'active' : ''}" data-detail="historial">Historial de consultas</button><button role="tab" aria-selected="${detailTab === 'seguimiento'}" aria-controls="detail-content" class="${detailTab === 'seguimiento' ? 'active' : ''}" data-detail="seguimiento">Seguimiento</button><button class="text-button" data-route="carnet">Ver carnet ${icon('arrow')}</button></div><div id="detail-content" role="tabpanel">${detailTab === 'historial' ? timeline() : '<div class="empty"><strong>Seguimiento de la atención</strong>Aquí se agruparán las aplicaciones y observaciones de cada consulta.<br>La relación está pendiente de confirmar en T5.</div>'}</div></section><div class="helper-card">${icon('clock')}<div><h3>El contexto de cada atención importa</h3><p>Las mediciones pertenecen a su consulta. Una nueva atención no reemplaza los antecedentes del paciente.</p></div></div></div></div>`;
+}
+function renderCarnet() {
+ const isLuna = selected === 'p1', vaccines = carnetTab === 'vacunas';
+ main.innerHTML = `<a class="back" href="#expediente">← Volver al expediente de ${esc(patient().nombre)}</a>` + heading('SEGUIMIENTO SANITARIO', 'Carnet sanitario', `Vacunas y desparasitaciones de ${esc(patient().nombre)}.`, `<button class="button secondary" data-route="expediente">${icon('folder')}Ver expediente</button>`) + `<div class="detail-grid">${profile()}<div class="detail-body"><section class="panel"><div class="tabs" role="tablist" aria-label="Tipo de evento sanitario"><button role="tab" aria-controls="carnet-content" aria-selected="${vaccines}" class="${vaccines ? 'active' : ''}" data-carnet="vacunas">Vacunación</button><button role="tab" aria-controls="carnet-content" aria-selected="${!vaccines}" class="${!vaccines ? 'active' : ''}" data-carnet="desparasitaciones">Desparasitación</button></div><div id="carnet-content" role="tabpanel">${isLuna ? `<div class="timeline"><article class="timeline-event"><span class="event-icon">${icon('card')}</span><div class="event-content"><div class="event-top"><h3>${vaccines ? 'Vacuna de ejemplo' : 'Desparasitante de ejemplo'}</h3><time>10 nov 2026</time></div><p>${vaccines ? 'Aplicación: anotación ficticia para revisar el formato.' : 'Peso registrado: 24.5 kg (dato ficticio).'}</p><div class="event-meta"><span>${vaccines ? 'Próxima fecha indicada: 10 dic 2026' : 'Sin fecha programada'}</span></div></div></article></div>` : '<div class="empty"><strong>Sin eventos en esta demostración</strong>El carnet se mostrará con los registros de cada paciente.</div>'}</div></section><div class="helper-card">${icon('card')}<div><h3>Próxima aplicación, solo cuando se indique</h3><p>La fecha la establece el veterinario. No se calcula un calendario clínico automáticamente.</p></div></div></div></div>`;
+}
+function renderConsult() {
+ const item = patient();
+ main.innerHTML = `<a class="back" href="#expediente">← Volver al expediente</a>` + heading('ATENCIÓN MÉDICA', 'Nueva consulta', `Registra la atención de ${esc(item.nombre)}. Los campos con * son mínimos propuestos.`) + `<form id="consult-form"><div class="form-layout"><section class="panel"><div class="form-section"><h2 class="section-title"><span class="section-number">01</span>Datos de la atención</h2><div class="field-grid"><label>Paciente<input value="${esc(item.nombre)} · ${esc(item.especie)}" readonly></label><label>Fecha <span class="required">*</span><input name="fecha" type="date" required value="2026-11-18"></label></div></div><div class="form-section"><h2 class="section-title"><span class="section-number">02</span>Mediciones <span class="optional">Opcionales</span></h2><div class="measure-grid"><label>Peso · kg<input name="peso" type="number" step="0.001" min="0.001" placeholder="Sin medición"></label><label>Temperatura · °C<input name="temperatura" type="number" step="0.01" placeholder="Sin medición"></label><label>FC · latidos/min<input name="fc" type="number" step="1" min="1" placeholder="Sin medición"></label><label>FR · respiraciones/min<input name="fr" type="number" step="1" min="1" placeholder="Sin medición"></label></div><p class="hint">Deja vacío lo que no se haya medido. No se completan valores automáticamente.</p></div><div class="form-section"><h2 class="section-title"><span class="section-number">03</span>Valoración y notas</h2><label>Diagnóstico o motivo <span class="required">*</span><textarea name="diagnostico" required maxlength="10000" placeholder="Escribe la valoración o el motivo de atención…"></textarea></label><label>Tratamiento <span class="optional">Opcional</span><textarea name="tratamiento" maxlength="10000" placeholder="Indicaciones registradas por el veterinario…"></textarea></label><label>Observaciones <span class="optional">Opcional</span><textarea name="observaciones" maxlength="10000" placeholder="Información adicional de esta consulta…"></textarea></label></div><p id="consult-error" class="form-error" role="alert" hidden></p><div class="form-actions"><button class="button secondary" type="button" data-cancel-consult>Cancelar</button><button class="button" type="submit">${icon('check')}Guardar en la vista</button></div></section><aside class="panel form-summary"><span class="eyebrow">PACIENTE SELECCIONADO</span><div style="margin-top:19px"><strong>${esc(item.nombre)}</strong><p>${esc(item.especie)} · ${esc(item.raza)}<br>${esc(ownerOf(item).nombre)}</p></div><div class="profile-divider"></div><h3>${offline ? 'Vista sin conexión' : 'Guardado de demostración'}</h3><p>Este formulario permite revisar la interacción. No guarda en SQLite ni envía información a un servidor.</p><p>Las reglas de campos mínimos y unidades siguen candidatas en T5.</p></aside></div></form>`;
+}
+function render() {
+ const route = location.hash.slice(1) || 'pacientes';
+ document.querySelectorAll('[data-nav]').forEach(link => { const active = link.dataset.nav === (route === 'consulta' ? 'expediente' : route); if (active) link.setAttribute('aria-current','page'); else link.removeAttribute('aria-current'); });
+ document.querySelector('.nav-count').textContent = patients.length;
+ document.getElementById('breadcrumb').textContent = ({ pacientes:'Pacientes', propietarios:'Propietarios', expediente:'Expediente', carnet:'Carnet sanitario', consulta:'Nueva consulta' })[route] || 'Pacientes';
+ ({ pacientes:renderPatients, propietarios:renderOwners, expediente:renderDetail, carnet:renderCarnet, consulta:renderConsult }[route] || renderPatients)();
+ document.title = `VetCare · ${document.getElementById('breadcrumb').textContent}`;
+}
+document.addEventListener('click', event => {
+ const button = event.target.closest('button'); if (!button) return;
+ if (button.dataset.patient) { selected = button.dataset.patient; detailTab = 'historial'; navigate('expediente', true); }
+ if (button.dataset.route) navigate(button.dataset.route, true);
+ if (button.dataset.filter) { filter = button.dataset.filter; renderPatients(); }
+ if (button.dataset.detail) { detailTab = button.dataset.detail; renderDetail(); }
+ if (button.dataset.carnet) { carnetTab = button.dataset.carnet; renderCarnet(); }
+ if (button.dataset.open) {
+  const id = button.dataset.open;
+  if (id === 'patient') document.getElementById('patient-owner').innerHTML = '<option value="">Seleccionar propietario</option>' + owners.map(owner => `<option value="${owner.id}">${esc(owner.nombre)}</option>`).join('');
+  document.getElementById(id + '-dialog').showModal();
+ }
+ if (button.hasAttribute('data-close')) button.closest('dialog').close();
+ if (button.hasAttribute('data-cancel-consult')) {
+  const form = document.getElementById('consult-form');
+  const hasText = Array.from(new FormData(form).entries()).some(([key,value]) => key !== 'fecha' && String(value).trim());
+  if (!hasText || window.confirm('¿Descartar los cambios de esta consulta de ejemplo?')) navigate('expediente', true);
+ }
+});
+document.addEventListener('input', event => { if (event.target.id === 'patient-search') { query = event.target.value; document.getElementById('patients-body').innerHTML = listRows(); } });
+document.getElementById('connection').addEventListener('click', function () {
+ if ((location.hash.slice(1) || '') === 'consulta') { notify('Termina o cancela la consulta antes de cambiar la vista de conexión.'); return; }
+ offline = !offline; this.setAttribute('aria-pressed', String(offline)); this.querySelector('span:last-child').textContent = offline ? 'Sin conexión · simulación' : 'Conexión simulada'; notify(offline ? 'Vista offline simulada. No se ha desconectado la red.' : 'Vista conectada simulada. No existe sincronización real.');
+});
+document.getElementById('owner-form').addEventListener('submit', function(event) {
+ event.preventDefault(); const data = new FormData(this), nombre = data.get('nombre').trim(); if (!nombre) { this.elements.nombre.setCustomValidity('Escribe un nombre.'); this.elements.nombre.reportValidity(); this.elements.nombre.setCustomValidity(''); return; }
+ owners.push({ id:'o'+(owners.length+1), nombre, telefono:data.get('telefono').trim(), domicilio:data.get('domicilio').trim(), localidad:data.get('localidad').trim() }); this.closest('dialog').close(); this.reset(); renderOwners(); notify('Propietario añadido solo a esta vista. Se reinicia al recargar.');
+});
+document.getElementById('patient-form').addEventListener('submit', function(event) {
+ event.preventDefault(); const data = new FormData(this), nombre = data.get('nombre').trim(); if (!nombre) { this.elements.nombre.setCustomValidity('Escribe un nombre o identificación.'); this.elements.nombre.reportValidity(); this.elements.nombre.setCustomValidity(''); return; }
+ patients.push({ id:'p'+(patients.length+1), nombre, especie:data.get('especie'), raza:data.get('raza').trim() || 'Sin especificar', propietario:data.get('propietario'), edad:'Edad no registrada', peso:'Sin medición', ultima:'Sin atención', estado:'Pendiente (ejemplo)' }); this.closest('dialog').close(); this.reset(); renderPatients(); notify('Paciente añadido solo a esta vista. Se reinicia al recargar.');
+});
+document.addEventListener('submit', event => {
+ if (event.target.id !== 'consult-form') return;
+ event.preventDefault(); const data = new FormData(event.target), error = document.getElementById('consult-error');
+ if (!data.get('diagnostico').trim()) { error.hidden = false; error.textContent = 'Escribe el diagnóstico o motivo de atención. Los cambios siguen en el formulario.'; return; }
+ records.push({ paciente:selected, fecha:data.get('fecha'), diagnostico:data.get('diagnostico').trim(), tratamiento:data.get('tratamiento').trim(), observaciones:data.get('observaciones').trim(), peso:data.get('peso'), temperatura:data.get('temperatura'), fc:data.get('fc'), fr:data.get('fr'), pendiente:offline });
+ const current = patient(); current.ultima = formatDate(data.get('fecha')); current.estado = offline ? 'Pendiente (ejemplo)' : 'Confirmado (ejemplo)'; if (data.get('peso')) current.peso = data.get('peso')+' kg';
+ detailTab = 'historial'; navigate('expediente', true); notify('Consulta añadida a la vista de ejemplo. No se ha guardado en una base de datos.');
+});
+window.addEventListener('hashchange', render);
+render();
