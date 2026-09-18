@@ -60,13 +60,21 @@ function render() {
  document.querySelector('.nav-count').textContent = patients.length;
  document.getElementById('breadcrumb').textContent = ({ pacientes:'Pacientes', propietarios:'Propietarios', expediente:'Expediente', carnet:'Carnet sanitario', consulta:'Nueva consulta' })[route] || 'Pacientes';
  ({ pacientes:renderPatients, propietarios:renderOwners, expediente:renderDetail, carnet:renderCarnet, consulta:renderConsult }[route] || renderPatients)();
+ adaptControls();
  document.title = `VetCare · ${document.getElementById('breadcrumb').textContent}`;
+}
+function adaptControls() {
+ document.querySelectorAll('table').forEach(table => {
+  const labels = Array.from(table.querySelectorAll('thead th'), cell => cell.textContent.trim());
+  table.querySelectorAll('tbody tr').forEach(row => Array.from(row.children).forEach((cell,index) => { cell.dataset.label = labels[index] || ''; }));
+ });
+ document.querySelectorAll('input[type="number"]').forEach(input => { input.inputMode = input.step === '1' ? 'numeric' : 'decimal'; });
 }
 document.addEventListener('click', event => {
  const button = event.target.closest('button'); if (!button) return;
  if (button.dataset.patient) { selected = button.dataset.patient; detailTab = 'historial'; navigate('expediente', true); }
  if (button.dataset.route) navigate(button.dataset.route, true);
- if (button.dataset.filter) { filter = button.dataset.filter; renderPatients(); }
+ if (button.dataset.filter) { filter = button.dataset.filter; renderPatients(); adaptControls(); }
  if (button.dataset.detail) { detailTab = button.dataset.detail; renderDetail(); }
  if (button.dataset.carnet) { carnetTab = button.dataset.carnet; renderCarnet(); }
  if (button.dataset.open) {
@@ -81,18 +89,18 @@ document.addEventListener('click', event => {
   if (!hasText || window.confirm('¿Descartar los cambios de esta consulta de ejemplo?')) navigate('expediente', true);
  }
 });
-document.addEventListener('input', event => { if (event.target.id === 'patient-search') { query = event.target.value; document.getElementById('patients-body').innerHTML = listRows(); } });
+document.addEventListener('input', event => { if (event.target.id === 'patient-search') { query = event.target.value; document.getElementById('patients-body').innerHTML = listRows(); adaptControls(); } });
 document.getElementById('connection').addEventListener('click', function () {
  if ((location.hash.slice(1) || '') === 'consulta') { notify('Termina o cancela la consulta antes de cambiar la vista de conexión.'); return; }
  offline = !offline; this.setAttribute('aria-pressed', String(offline)); this.querySelector('span:last-child').textContent = offline ? 'Sin conexión · simulación' : 'Conexión simulada'; notify(offline ? 'Vista offline simulada. No se ha desconectado la red.' : 'Vista conectada simulada. No existe sincronización real.');
 });
 document.getElementById('owner-form').addEventListener('submit', function(event) {
  event.preventDefault(); const data = new FormData(this), nombre = data.get('nombre').trim(); if (!nombre) { this.elements.nombre.setCustomValidity('Escribe un nombre.'); this.elements.nombre.reportValidity(); this.elements.nombre.setCustomValidity(''); return; }
- owners.push({ id:'o'+(owners.length+1), nombre, telefono:data.get('telefono').trim(), domicilio:data.get('domicilio').trim(), localidad:data.get('localidad').trim() }); this.closest('dialog').close(); this.reset(); renderOwners(); notify('Propietario añadido solo a esta vista. Se reinicia al recargar.');
+ owners.push({ id:'o'+(owners.length+1), nombre, telefono:data.get('telefono').trim(), domicilio:data.get('domicilio').trim(), localidad:data.get('localidad').trim() }); this.closest('dialog').close(); this.reset(); renderOwners(); adaptControls(); notify('Propietario añadido solo a esta vista. Se reinicia al recargar.');
 });
 document.getElementById('patient-form').addEventListener('submit', function(event) {
  event.preventDefault(); const data = new FormData(this), nombre = data.get('nombre').trim(); if (!nombre) { this.elements.nombre.setCustomValidity('Escribe un nombre o identificación.'); this.elements.nombre.reportValidity(); this.elements.nombre.setCustomValidity(''); return; }
- patients.push({ id:'p'+(patients.length+1), nombre, especie:data.get('especie'), raza:data.get('raza').trim() || 'Sin especificar', propietario:data.get('propietario'), edad:'Edad no registrada', peso:'Sin medición', ultima:'Sin atención', estado:'Pendiente (ejemplo)' }); this.closest('dialog').close(); this.reset(); renderPatients(); notify('Paciente añadido solo a esta vista. Se reinicia al recargar.');
+ patients.push({ id:'p'+(patients.length+1), nombre, especie:data.get('especie'), raza:data.get('raza').trim() || 'Sin especificar', propietario:data.get('propietario'), edad:'Edad no registrada', peso:'Sin medición', ultima:'Sin atención', estado:'Pendiente (ejemplo)' }); this.closest('dialog').close(); this.reset(); renderPatients(); adaptControls(); notify('Paciente añadido solo a esta vista. Se reinicia al recargar.');
 });
 document.addEventListener('submit', event => {
  if (event.target.id !== 'consult-form') return;
