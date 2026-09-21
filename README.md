@@ -4,7 +4,7 @@ Prototipo escolar de gestión veterinaria y expedientes clínicos para Veterinar
 
 ## Estado
 
-T1 a T6 preparados; paquete T7, arquitectura T8, modelo lógico T9, prototipos T10/T11 y política de acceso T12 disponibles. La aprobación de requisitos y las tres decisiones de captura de T5 permanecen pendientes. La validación clínica permanece pendiente. Existe código de prototipo visual; todavía no hay aplicación clínica conectada ni servicios desplegados.
+T1 a T6 preparados; paquete T7, arquitectura T8, modelo lógico T9, prototipos T10/T11 y políticas de acceso T12 y recuperación T13 disponibles. La aprobación de requisitos y las tres decisiones de captura de T5 permanecen pendientes. La validación clínica permanece pendiente. Existe código de prototipo visual; todavía no hay aplicación clínica conectada ni servicios desplegados.
 
 El trabajo incluye desarrollar el sistema completo: web, API PHP, MariaDB central, Electron para Windows, SQLite local, sincronización, pruebas e instalador. Las tareas T8–T14 preparan el diseño; la implementación comienza con T15, siguiendo las asignaciones y ventanas del cronograma.
 
@@ -36,5 +36,6 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Pantallas móviles — T11](docs/diseno/T11_pantallas_moviles.md)
 - [Abrir vista previa móvil](docs/diseno/prototipo_escritorio/mobile.html)
 - [Acceso y protección de información — T12](docs/arquitectura/T12_acceso_proteccion.md)
+- [Guardado y recuperación — T13](docs/arquitectura/T13_guardado_recuperacion.md)
 
 No se incorporan credenciales, bases clínicas reales ni respaldos de pacientes al repositorio.
