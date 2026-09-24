@@ -4,7 +4,7 @@ Prototipo escolar de gestión veterinaria y expedientes clínicos para Veterinar
 
 ## Estado
 
-T1 a T6 preparados; paquete T7, diseños T8–T13 y revisión general T14 disponibles. T14 concluye con observaciones y permite preparar el entorno T15. La aprobación formal de requisitos/diseño y las tres decisiones de captura de T5 permanecen pendientes. Existe código de prototipo visual; todavía no hay aplicación clínica conectada ni servicios desplegados.
+T1–T14 documentados y T15 con código de preparación web, API PHP y arranque Electron. PHP y extensiones del proyecto disponibles; instalación de Electron bloqueada por DNS y prueba HTTP local bloqueada por EACCES en el entorno de ejecución. No hay aplicación clínica conectada ni servicios desplegados. Las decisiones de captura de T5 y las aprobaciones formales permanecen pendientes.
 
 El trabajo incluye desarrollar el sistema completo: web, API PHP, MariaDB central, Electron para Windows, SQLite local, sincronización, pruebas e instalador. Las tareas T8–T14 preparan el diseño; la implementación comienza con T15, siguiendo las asignaciones y ventanas del cronograma.
 
@@ -14,7 +14,7 @@ El desarrollo se entrega una tarea por vez cuando las dependencias lo permiten. 
 
 - Web responsiva para consulta y captura desde navegadores modernos, con conexión.
 - Aplicación Electron para Windows con persistencia SQLite, captura y consulta offline.
-- API PHP desplegada en Vercel mediante el runtime comunitario `vercel-php`.
+- API PHP prevista en Vercel con contenedor administrado; preparación de T15 pendiente de verificación de despliegue. El runtime comunitario anterior está archivado.
 - MariaDB central administrada en alwaysdata, inicialmente para demostración académica.
 - Sincronización mediante API, historial de conflictos y snapshots locales.
 
@@ -38,5 +38,19 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Acceso y protección de información — T12](docs/arquitectura/T12_acceso_proteccion.md)
 - [Guardado y recuperación — T13](docs/arquitectura/T13_guardado_recuperacion.md)
 - [Revisión general del diseño — T14](docs/arquitectura/T14_revision_diseno.md)
+- [Entorno y comandos de desarrollo — T15](docs/implementacion/T15_entorno_trabajo.md)
+
+## Ejecutar la preparación local
+
+Con Node 24 y PHP 8.5 disponibles, desde esta carpeta:
+
+```powershell
+npm run doctor
+npm run check
+npm test
+npm run dev
+```
+
+Abrir http://127.0.0.1:5173. El servidor solo es de desarrollo; no es el alojamiento final. Para Electron, instalar dependencias con `npm install` y ejecutar `npm run dev:desktop`. La prueba HTTP separada es `npm run test:integration`; necesita conexiones locales permitidas. Véanse los bloqueos y pendientes en T15.
 
 No se incorporan credenciales, bases clínicas reales ni respaldos de pacientes al repositorio.

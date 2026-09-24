@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+node_modules
+dist
+release
+storage
+docs
+tests
+*.sqlite*
+*.db*
+*.pem
+*.key
