@@ -4,7 +4,7 @@ Prototipo escolar de gestión veterinaria y expedientes clínicos para Veterinar
 
 ## Estado
 
-T1–T14 documentados y T15 con código de preparación web, API PHP y arranque Electron. PHP y extensiones del proyecto disponibles; instalación de Electron bloqueada por DNS y prueba HTTP local bloqueada por EACCES en el entorno de ejecución. No hay aplicación clínica conectada ni servicios desplegados. Las decisiones de captura de T5 y las aprobaciones formales permanecen pendientes.
+T1–T14 documentados, T15 con arranque web/PHP/Electron y T16 con SQLite local, migración técnica y prueba de persistencia. El usuario confirmó ejecución de web, API y ventana Electron en su terminal. Las pruebas de almacenamiento también pasaron con el ejecutable Electron instalado. No hay todavía módulos clínicos conectados, MariaDB o despliegue remoto. Las decisiones de captura de T5 y las aprobaciones formales permanecen pendientes.
 
 El trabajo incluye desarrollar el sistema completo: web, API PHP, MariaDB central, Electron para Windows, SQLite local, sincronización, pruebas e instalador. Las tareas T8–T14 preparan el diseño; la implementación comienza con T15, siguiendo las asignaciones y ventanas del cronograma.
 
@@ -39,6 +39,7 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Guardado y recuperación — T13](docs/arquitectura/T13_guardado_recuperacion.md)
 - [Revisión general del diseño — T14](docs/arquitectura/T14_revision_diseno.md)
 - [Entorno y comandos de desarrollo — T15](docs/implementacion/T15_entorno_trabajo.md)
+- [Almacenamiento SQLite y prueba práctica — T16](docs/implementacion/T16_almacenamiento_local.md)
 
 ## Ejecutar la preparación local
 
@@ -52,5 +53,7 @@ npm run dev
 ```
 
 Abrir http://127.0.0.1:5173. El servidor solo es de desarrollo; no es el alojamiento final. Para Electron, instalar dependencias con `npm install` y ejecutar `npm run dev:desktop`. La prueba HTTP separada es `npm run test:integration`; necesita conexiones locales permitidas. Véanse los bloqueos y pendientes en T15.
+
+En Electron, T16 añade un panel para guardar un texto ficticio en SQLite y recuperarlo al reiniciar. Las pruebas específicas son `npm run test:storage` y `npm run test:desktop-storage`. Los bloqueos históricos de T15 se distinguen de la ejecución posterior confirmada por el usuario; no se interpretan como resultados fallidos en su terminal.
 
 No se incorporan credenciales, bases clínicas reales ni respaldos de pacientes al repositorio.
