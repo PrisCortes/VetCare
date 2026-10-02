@@ -13,11 +13,12 @@
     "dev:desktop": "node scripts/desktop.mjs",
     "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
-    "test": "node --test tests/api.test.mjs tests/storage.test.mjs",
+    "test": "node --test tests/api.test.mjs tests/storage.test.mjs tests/views.test.mjs",
     "test:storage": "node --test tests/storage.test.mjs",
     "test:desktop-storage": "node scripts/test-desktop-storage.mjs",
     "test:integration": "node --test tests/environment.test.mjs",
-    "doctor": "node scripts/doctor.mjs"
+    "doctor": "node scripts/doctor.mjs",
+    "test:views": "node --test tests/views.test.mjs"
   },
   "devDependencies": {
     "electron": "^45.3.4"

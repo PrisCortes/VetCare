@@ -1,0 +1,23 @@
+/* T17: integración de pantallas con el entorno ejecutable. */
+.prototype-note{flex-wrap:wrap;min-height:45px;line-height:1.6}
+.prototype-note .text-button{margin-left:auto}
+.empty-icon{display:grid;place-items:center;width:64px;height:64px;border-radius:20px;background:var(--cream);color:var(--olive);margin:0 auto 20px}
+.empty-icon svg{width:29px;height:29px}
+.empty p{line-height:1.7;margin-bottom:22px}
+.draft-notice{margin:20px 23px;color:var(--muted);font-size:12px;line-height:1.7}
+.review-result{margin:20px 23px;padding:17px;background:var(--cream);border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+dialog .review-result{margin:20px 0 0}
+.review-result p:last-child{margin-bottom:0}
+button:disabled{opacity:.55;cursor:not-allowed}
+.event-meta{flex-wrap:wrap}
+.environment-panel{max-width:850px;margin:auto}
+.environment-panel>section{background:white;border:1px solid var(--line);border-radius:var(--radius);padding:25px;margin-bottom:20px}
+.environment-panel h2{font-size:17px;margin:0 0 22px}
+.environment-panel p{font-size:12px;color:var(--muted);line-height:1.7}
+.environment-panel dl{margin:10px 0 22px}
+.environment-panel dl>div{display:flex;justify-content:space-between;gap:20px;padding:13px 0;border-bottom:1px solid var(--line);font-size:12px}
+.environment-panel dt{color:var(--muted)}
+.environment-panel dd{margin:0;text-align:right}
+.environment-panel form{margin-top:20px}
+@media(max-width:800px){.topbar .breadcrumb{max-width:55%;line-height:1.7}.connection{min-height:40px}.prototype-note .text-button{margin-left:0}.review-result{margin:16px}.environment-panel>section{padding:18px}.environment-panel dl>div{flex-wrap:wrap}.environment-panel dd{text-align:left}.event-meta{gap:8px 14px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

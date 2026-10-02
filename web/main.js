@@ -1,54 +1,61 @@
-const button = document.getElementById('check');
-const result = document.getElementById('api');
-const message = document.getElementById('message');
-if (window.vetcare) {
-  try {
-    const context = await window.vetcare.environment();
-    document.getElementById('client').textContent = context.client === 'desktop' ? 'Electron · Windows' : 'Web';
-    if (context.persistence && window.vetcare.storage) await initializeStorage();
-  }
-  catch { document.getElementById('client').textContent = 'Escritorio · contexto no disponible'; }
+import {createViewState,escapeHtml as e} from './view-state.js';
+import {patientsView,patientRows,ownersView,detailView,carnetView,consultationView,formFields} from './views.js';
+import {initializeDiagnostics} from './diagnostics.js';
+const state=createViewState(),main=document.getElementById('main'),dialog=document.getElementById('record-dialog');
+let query='',species='Todas',detailTab='historial',carnetTab='vacunas',currentRoute='',dirty=false,dialogDirty=false,dialogKind='',toastTimer;
+const routes=new Set(['pacientes','propietarios','expediente','carnet','consulta','entorno']);
+function route(){const value=location.hash.slice(1);return routes.has(value)?value:'pacientes';}
+function notify(text){const box=document.getElementById('toast');box.textContent=text;box.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{box.hidden=true;},6500);}
+function leaveDraft(){return !dirty||window.confirm('Esta captura no está guardada. ¿Quieres descartarla?');}
+function go(destination){if(!routes.has(destination)||destination===currentRoute)return;if(!leaveDraft())return;dirty=false;location.hash=destination;}
+function render(){
+ currentRoute=route();dirty=false;
+ document.querySelectorAll('[data-nav]').forEach(link=>{const active=link.dataset.nav===(currentRoute==='consulta'?'expediente':currentRoute);if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
+ document.querySelector('.nav-count').textContent=state.data.patients.length;
+ const names={pacientes:'Pacientes',propietarios:'Propietarios',expediente:'Expediente',carnet:'Carnet sanitario',consulta:'Nueva consulta',entorno:'Estado del entorno'};
+ document.getElementById('breadcrumb').textContent=names[currentRoute];document.title='VetCare · '+names[currentRoute];
+ document.getElementById('mode-note').textContent=state.demo?'Demostración activa · Datos ficticios, sin guardado clínico.':'Versión en preparación · Sin datos clínicos conectados.';
+ document.getElementById('clear-demo').hidden=!state.demo;
+ if(currentRoute==='entorno'){main.innerHTML=document.getElementById('environment-template').innerHTML;initializeDiagnostics(document.getElementById('environment-panel')).catch(()=>notify('No se pudo completar el diagnóstico del entorno.'));}
+ else main.innerHTML=({pacientes:()=>patientsView(state,query,species),propietarios:()=>ownersView(state),expediente:()=>detailView(state,detailTab),carnet:()=>carnetView(state,carnetTab),consulta:()=>consultationView(state)})[currentRoute]();
+ main.focus({preventScroll:true});
+ window.scrollTo({top:0,left:0,behavior:"instant"});
 }
-button.addEventListener('click', async () => {
-  button.disabled = true; result.textContent = 'Comprobando…';
-  try {
-    const response = await fetch('/api/v1/health', { cache: 'no-store', signal: AbortSignal.timeout(5000) });
-    if (!response.ok) throw new Error('Respuesta no válida');
-    const data = await response.json();
-    if (data.service !== 'vetcare-api' || data.status !== 'ok') throw new Error('Servicio inesperado');
-    result.textContent = 'Disponible'; message.textContent = 'PHP respondió correctamente. La conexión con MariaDB todavía no se ha configurado.';
-  } catch { result.textContent = 'No disponible'; message.textContent = 'No se pudo comprobar la API. Revisa el proceso de desarrollo y vuelve a intentar.'; }
-  finally { button.disabled = false; }
+function openForm(kind){
+ if(!['propietario','paciente','vacuna','desparasitacion'].includes(kind))return;
+ dialogKind=kind;dialogDirty=false;
+ document.getElementById('record-title').textContent={propietario:'Nuevo propietario',paciente:'Nuevo paciente',vacuna:'Registro de vacuna',desparasitacion:'Registro de desparasitación'}[kind];
+ document.getElementById('record-fields').innerHTML=formFields(kind,state);document.getElementById('record-result').hidden=true;
+ document.getElementById('review-record').disabled=kind==='paciente'&&!state.data.owners.length;dialog.showModal();
+}
+function closeDialog(){if(dialogDirty&&!window.confirm('Esta captura no está guardada. ¿Quieres descartarla?'))return;dialogDirty=false;dialog.close();}
+document.addEventListener('click',event=>{
+ const anchor=event.target.closest('a[href^="#"]');if(anchor){event.preventDefault();go(anchor.getAttribute('href').slice(1));return;}
+ const button=event.target.closest('button');if(!button)return;
+ if(button.dataset.route)go(button.dataset.route);
+ if(button.dataset.patient){if(!leaveDraft())return;if(state.select(button.dataset.patient)){dirty=false;detailTab='historial';if(currentRoute==='expediente')render();else go('expediente');}}
+ if(button.hasAttribute('data-demo')){state.loadDemo();query='';species='Todas';render();notify('Muestra ficticia cargada solo para explorar pantallas. No se guarda en SQLite.');}
+ if(button.id==='clear-demo'){if(!leaveDraft())return;dirty=false;state.clearDemo();query='';species='Todas';render();notify('Muestra retirada de la vista. No se alteró SQLite.');}
+ if(button.dataset.species){species=button.dataset.species;render();}
+ if(button.dataset.tab){detailTab=button.dataset.tab;render();}
+ if(button.dataset.carnet){carnetTab=button.dataset.carnet;render();}
+ if(button.dataset.form)openForm(button.dataset.form);
+ if(button.hasAttribute('data-close-dialog'))closeDialog();
 });
-function showProbe(record) {
-  document.getElementById('saved-probe').textContent = record ? record.text : 'Sin registro';
-  document.getElementById('saved-at').textContent = record ? new Date(record.updatedAt).toLocaleString('es-MX') : 'Sin registro';
-}
-async function initializeStorage() {
-  const panel = document.getElementById('storage-panel'), status = document.getElementById('sqlite'), notice = document.getElementById('storage-message');
-  panel.hidden = false;
-  const form = document.getElementById('storage-form');
-  try {
-    const response = await window.vetcare.storage.status();
-    if (!response.ok || !response.data.integrity) throw new Error('Almacenamiento no verificado');
-    status.textContent = `Disponible · esquema ${response.data.schemaVersion}`;
-    const read = await window.vetcare.storage.readProbe();
-    if (!read.ok) throw new Error('No se pudo leer');
-    showProbe(read.data);
-    notice.textContent = 'SQLite abierto y verificado. El dato guardado se conserva al cerrar Electron.';
-  } catch {
-    status.textContent = 'No disponible'; notice.textContent = 'No se pudo comprobar SQLite. No se habilita el guardado.';
-    document.getElementById('save-probe').disabled = true; return;
-  }
-  form.addEventListener('submit', async event => {
-    event.preventDefault(); const value = document.getElementById('probe').value.trim();
-    if (!value) { notice.textContent = 'Escribe un texto de prueba; no se guardaron cambios.'; return; }
-    const save = document.getElementById('save-probe'); save.disabled = true;
-    try {
-      const response = await window.vetcare.storage.saveProbe(value);
-      if (!response.ok) throw new Error('Guardado no confirmado');
-      showProbe(response.data); notice.textContent = 'Texto guardado en SQLite. Cierra y abre de nuevo Electron para comprobarlo.';
-    } catch { notice.textContent = 'No se confirmó el guardado. El texto sigue en el formulario; revisa el almacenamiento.'; }
-    finally { save.disabled = false; }
-  });
-}
+document.addEventListener('input',event=>{
+ if(event.target.id==='patient-search'){query=event.target.value;document.getElementById('patient-rows').innerHTML=patientRows(state,query,species);}
+ if(event.target.closest('#consult-form'))dirty=true;if(event.target.closest('#record-form'))dialogDirty=true;
+});
+document.addEventListener('change',event=>{if(event.target.closest('#consult-form'))dirty=true;if(event.target.closest('#record-form'))dialogDirty=true;});
+document.addEventListener('submit',event=>{
+ if(!['consult-form','record-form'].includes(event.target.id))return;
+ event.preventDefault();const form=event.target,data=new FormData(form),result=document.getElementById(form.id==='consult-form'?'consult-result':'record-result');
+ const minimum=form.id==='consult-form'?'diagnostico':dialogKind==='propietario'||dialogKind==='paciente'?'nombre':'producto';
+ if(!String(data.get(minimum)||'').trim()){result.textContent='El campo principal no puede estar vacío ni contener solo espacios.';result.hidden=false;return;}
+ if(data.get('proxima')&&data.get('fecha')&&data.get('proxima')<data.get('fecha')){result.textContent='La próxima fecha no puede ser anterior a la aplicación según la propuesta de captura.';result.hidden=false;return;}
+ result.innerHTML=`<strong>Captura revisada en pantalla</strong><p>${e(data.get(minimum))}</p><p>El registro clínico aún no está habilitado. No se guardó información en SQLite ni en un servidor.</p>`;result.hidden=false;result.scrollIntoView({block:'nearest',behavior:'auto'});
+});
+dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog();});
+window.addEventListener('hashchange',()=>{if(route()===currentRoute)return;if(!leaveDraft()){history.replaceState(null,'','#'+currentRoute);return;}render();});
+window.addEventListener('beforeunload',event=>{if(dirty||dialogDirty){event.preventDefault();event.returnValue='';}});
+render();

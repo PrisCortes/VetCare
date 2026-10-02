@@ -16,7 +16,7 @@ app.whenReady().then(async () => {
   const authorize = event => {
     if (event.sender !== window.webContents || !event.senderFrame || event.senderFrame !== window.webContents.mainFrame || new URL(event.senderFrame.url).origin !== origin) throw new Error('Origen no permitido.');
   };
-  ipcMain.handle('vetcare:environment', event => { authorize(event); return { client: 'desktop', platform: process.platform, stage: 'T16', persistence: true }; });
+  ipcMain.handle('vetcare:environment', event => { authorize(event); return { client: 'desktop', platform: process.platform, stage: 'T17', persistence: true }; });
   const storageAction = (event, action) => {
     authorize(event);
     try { return { ok: true, data: action() }; }

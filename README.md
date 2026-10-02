@@ -4,7 +4,7 @@ Prototipo escolar de gestión veterinaria y expedientes clínicos para Veterinar
 
 ## Estado
 
-T1–T14 documentados, T15 con arranque web/PHP/Electron y T16 con SQLite local, migración técnica y prueba de persistencia. El usuario confirmó ejecución de web, API y ventana Electron en su terminal. Las pruebas de almacenamiento también pasaron con el ejecutable Electron instalado. No hay todavía módulos clínicos conectados, MariaDB o despliegue remoto. Las decisiones de captura de T5 y las aprobaciones formales permanecen pendientes.
+T1–T14 documentados, T15 con arranque web/PHP/Electron y T16 con SQLite local, migración técnica y prueba de persistencia. T17 incorpora las pantallas de pacientes, propietarios, expediente, carnet y consulta en el cliente compartido con Electron, verificadas interactivamente en navegador. El usuario confirmó ejecución de web, API y ventana Electron en su terminal. Las pruebas de almacenamiento también pasaron con el ejecutable Electron instalado. No hay todavía módulos clínicos conectados, MariaDB o despliegue remoto. Las decisiones de captura de T5 y las aprobaciones formales permanecen pendientes.
 
 El trabajo incluye desarrollar el sistema completo: web, API PHP, MariaDB central, Electron para Windows, SQLite local, sincronización, pruebas e instalador. Las tareas T8–T14 preparan el diseño; la implementación comienza con T15, siguiendo las asignaciones y ventanas del cronograma.
 
@@ -54,6 +54,8 @@ npm run dev
 
 Abrir http://127.0.0.1:5173. El servidor solo es de desarrollo; no es el alojamiento final. Para Electron, instalar dependencias con `npm install` y ejecutar `npm run dev:desktop`. La prueba HTTP separada es `npm run test:integration`; necesita conexiones locales permitidas. Véanse los bloqueos y pendientes en T15.
 
-En Electron, T16 añade un panel para guardar un texto ficticio en SQLite y recuperarlo al reiniciar. Las pruebas específicas son `npm run test:storage` y `npm run test:desktop-storage`. Los bloqueos históricos de T15 se distinguen de la ejecución posterior confirmada por el usuario; no se interpretan como resultados fallidos en su terminal.
+La aplicación inicia vacía. **Cargar datos de demostración** permite explorar las pantallas con una muestra ficticia en memoria. Los formularios revisan la captura sin guardado clínico. La revisión visual de estas pantallas en Electron sigue pendiente.
+
+En **Estado del entorno**, T16 conserva un panel para guardar un texto ficticio en SQLite y recuperarlo al reiniciar. Las pruebas específicas son `npm run test:storage` y `npm run test:desktop-storage`. Los bloqueos históricos de T15 se distinguen de la ejecución posterior confirmada por el usuario; no se interpretan como resultados fallidos en su terminal.
 
 No se incorporan credenciales, bases clínicas reales ni respaldos de pacientes al repositorio.

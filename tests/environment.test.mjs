@@ -9,7 +9,8 @@ test('web y PHP locales: salud, errores y aislamiento de archivos', async () => 
   const webPort = await unusedPort(); let apiPort = await unusedPort(); while (apiPort === webPort) apiPort = await unusedPort();
   const services = await startServices({ webPort, apiPort });
   try {
-    const page = await fetch(services.url); assert.equal(page.status, 200); assert.match(await page.text(), /Preparación del sistema/);
+    const page = await fetch(services.url); assert.equal(page.status, 200); assert.match(await page.text(), /VetCare/);
+    for (const asset of ['main.js','view-state.js','views.js','diagnostics.js','styles.css','mobile.css','application.css']) assert.equal((await fetch(services.url + '/' + asset)).status, 200, asset);
     const health = await fetch(services.url + '/api/v1/health'); assert.equal(health.status, 200); assert.deepEqual(await health.json(), { service: 'vetcare-api', status: 'ok', database: 'not_configured' });
     const method = await fetch(services.url + '/api/v1/health', { method: 'POST' }); assert.equal(method.status, 405); assert.equal(method.headers.get('allow'), 'GET');
     const missing = await fetch(services.url + '/api/v1/patients'); assert.equal(missing.status, 404); assert.equal((await missing.json()).error.code, 'NOT_FOUND');
