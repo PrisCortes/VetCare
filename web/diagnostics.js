@@ -19,7 +19,7 @@ button.addEventListener('click', async () => {
     if (!response.ok) throw new Error('Respuesta no válida');
     const data = await response.json();
     if (data.service !== 'vetcare-api' || data.status !== 'ok') throw new Error('Servicio inesperado');
-    result.textContent = 'Disponible'; message.textContent = 'PHP respondió correctamente. La conexión con MariaDB todavía no se ha configurado.';
+    result.textContent = 'Disponible'; message.textContent = 'PHP respondió correctamente. La conexión central se verifica por separado con npm run db:check en el servidor.';
   } catch { result.textContent = 'No disponible'; message.textContent = 'No se pudo comprobar la API. Revisa el proceso de desarrollo y vuelve a intentar.'; }
   finally { button.disabled = false; }
 });

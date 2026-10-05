@@ -40,6 +40,10 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Revisión general del diseño — T14](docs/arquitectura/T14_revision_diseno.md)
 - [Entorno y comandos de desarrollo — T15](docs/implementacion/T15_entorno_trabajo.md)
 - [Almacenamiento SQLite y prueba práctica — T16](docs/implementacion/T16_almacenamiento_local.md)
+- [Pantallas integradas de escritorio - T17](docs/implementacion/T17_pantallas_escritorio.md)
+- [Comunicación con MariaDB y configuración práctica - T18](docs/implementacion/T18_comunicacion_central.md)
+
+T18 incorpora el conector PHP–MariaDB y `npm run db:check`. La configuración central, TLS real y despliegue siguen pendientes. El diagnóstico actual devuelve `DB_NOT_CONFIGURED`; todavía no se acredita conexión a una base central.
 
 ## Ejecutar la preparación local
 
