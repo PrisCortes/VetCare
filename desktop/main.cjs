@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('node:path');
 const { openLocalStore } = require('./storage.cjs');
+const { createAuthClient } = require('./auth.cjs');
 let window, storage;
 app.whenReady().then(async () => {
   const source = process.env.VETCARE_DEV_URL;
@@ -16,6 +17,8 @@ app.whenReady().then(async () => {
   const authorize = event => {
     if (event.sender !== window.webContents || !event.senderFrame || event.senderFrame !== window.webContents.mainFrame || new URL(event.senderFrame.url).origin !== origin) throw new Error('Origen no permitido.');
   };
+  const authentication = createAuthClient(origin);
+  ipcMain.handle('vetcare:auth', (event, action, data) => { authorize(event); return authentication(action, data); });
   ipcMain.handle('vetcare:environment', event => { authorize(event); return { client: 'desktop', platform: process.platform, stage: 'T17', persistence: true }; });
   const storageAction = (event, action) => {
     authorize(event);

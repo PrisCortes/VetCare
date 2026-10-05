@@ -1,6 +1,7 @@
 import {createViewState,escapeHtml as e} from './view-state.js';
 import {patientsView,patientRows,ownersView,detailView,carnetView,consultationView,formFields} from './views.js';
 import {initializeDiagnostics} from './diagnostics.js';
+import {initializeAuth} from './auth.js';
 const state=createViewState(),main=document.getElementById('main'),dialog=document.getElementById('record-dialog');
 let query='',species='Todas',detailTab='historial',carnetTab='vacunas',currentRoute='',dirty=false,dialogDirty=false,dialogKind='',toastTimer;
 const routes=new Set(['pacientes','propietarios','expediente','carnet','consulta','entorno']);
@@ -59,3 +60,4 @@ dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog();})
 window.addEventListener('hashchange',()=>{if(route()===currentRoute)return;if(!leaveDraft()){history.replaceState(null,'','#'+currentRoute);return;}render();});
 window.addEventListener('beforeunload',event=>{if(dirty||dialogDirty){event.preventDefault();event.returnValue='';}});
 render();
+await initializeAuth(()=>{state.clearDemo();query='';species='Todas';dirty=false;dialogDirty=false;if(dialog.open)dialog.close();render();});

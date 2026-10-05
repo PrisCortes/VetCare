@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('vetcare', Object.freeze({
+  auth: (action, data) => ipcRenderer.invoke('vetcare:auth', action, data),
   environment: () => ipcRenderer.invoke('vetcare:environment'),
   storage: Object.freeze({
     status: () => ipcRenderer.invoke('vetcare:storage:status'),

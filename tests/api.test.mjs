@@ -13,7 +13,7 @@ function call(method, path) {
   return { status: Number(status[1]), body: JSON.parse(response.stdout) };
 }
 test('health confirma PHP sin declarar base de datos conectada', () => {
-  assert.deepEqual(call('GET', '/api/v1/health'), { status: 200, body: { service: 'vetcare-api', status: 'ok', database: 'not_configured' } });
+  assert.deepEqual(call('GET', '/api/v1/health'), { status: 200, body: { service: 'vetcare-api', status: 'ok', database: 'not_checked' } });
 });
 test('rechaza escrituras a health y no revela rutas internas', () => {
   for (const method of ['POST', 'PUT', 'DELETE']) assert.equal(call(method, '/api/v1/health').status, 405);

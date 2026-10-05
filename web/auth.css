@@ -1,0 +1,12 @@
+[hidden]{display:none!important}
+body.auth-locked>.sidebar,body.auth-locked>.shell{display:none}
+.login-gate{min-height:100dvh;display:grid;place-items:center;padding:24px;background:#f7f5ed}
+.login-card{width:min(100%,440px);background:#fff;padding:36px;border:1px solid #dddccf;border-radius:20px;box-shadow:0 16px 60px #26352a12}
+.login-card h1{color:#26352a;margin:8px 0 20px}.login-card label,.account-form label{display:grid;gap:8px;margin:16px 0;font-weight:600}
+.login-card input,.account-form input,.account-form select,.account-row select{width:100%;box-sizing:border-box;border:1px solid #b9bfaf;border-radius:8px;padding:12px;font:inherit;background:white}
+.login-card button{width:100%;margin-top:12px}.auth-notice{min-height:24px;line-height:1.5;color:#704728}
+.session-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.session-controls small{max-width:240px}
+#users-dialog{width:min(850px,94vw);max-height:90dvh;overflow:auto;padding:28px}
+.account-form{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}.account-form button{align-self:center}
+.account-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:16px 0;border-bottom:1px solid #dddccf}.account-row>div{flex:1;min-width:150px}.account-row small{display:block;margin-top:5px}#users-list{list-style:none;padding:0}
+@media(max-width:650px){.account-form{grid-template-columns:1fr}.login-card{padding:24px}.session-controls{font-size:12px}.topbar{height:auto;min-height:72px;flex-wrap:wrap;gap:12px;padding-block:12px}}

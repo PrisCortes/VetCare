@@ -10,8 +10,12 @@ test('web y PHP locales: salud, errores y aislamiento de archivos', async () => 
   const services = await startServices({ webPort, apiPort });
   try {
     const page = await fetch(services.url); assert.equal(page.status, 200); assert.match(await page.text(), /VetCare/);
-    for (const asset of ['main.js','view-state.js','views.js','diagnostics.js','styles.css','mobile.css','application.css']) assert.equal((await fetch(services.url + '/' + asset)).status, 200, asset);
-    const health = await fetch(services.url + '/api/v1/health'); assert.equal(health.status, 200); assert.deepEqual(await health.json(), { service: 'vetcare-api', status: 'ok', database: 'not_configured' });
+    for (const asset of ['auth.js','auth.css','main.js','view-state.js','views.js','diagnostics.js','styles.css','mobile.css','application.css']) assert.equal((await fetch(services.url + '/' + asset)).status, 200, asset);
+    const health = await fetch(services.url + '/api/v1/health'); assert.equal(health.status, 200); assert.deepEqual(await health.json(), { service: 'vetcare-api', status: 'ok', database: 'not_checked' });
+    const anonymous=await fetch(services.url+'/api/v1/auth/session');assert.equal(anonymous.status,401);
+    const wrongOrigin=await fetch(services.url+'/api/v1/auth/login',{method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:JSON.stringify({username:'test',password:'not-a-real-password'})});
+    assert.equal(wrongOrigin.status,403);assert.equal((await wrongOrigin.json()).error.code,'ORIGIN_REJECTED');
+    const badType=await fetch(services.url+'/api/v1/auth/login',{method:'POST',headers:{Origin:process.env.APP_ORIGIN || services.url,'Content-Type':'text/plain'},body:'username=test'});assert.equal(badType.status,415);
     const method = await fetch(services.url + '/api/v1/health', { method: 'POST' }); assert.equal(method.status, 405); assert.equal(method.headers.get('allow'), 'GET');
     const missing = await fetch(services.url + '/api/v1/patients'); assert.equal(missing.status, 404); assert.equal((await missing.json()).error.code, 'NOT_FOUND');
     for (const path of ['/.env', '/package.json', '/server/bootstrap.php', '/docs/gestion/T01_revision_documental.md', '/%2e%2e%2fREADME.md']) {

@@ -8,7 +8,7 @@ const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; ch
 export async function startServices({ webPort = 5173, apiPort = 8787 } = {}) {
   if (webPort === apiPort) throw new Error('WEB_PORT y API_PORT deben ser distintos.');
   const php = phpCommand();
-  const child = spawn(php.binary, [...php.args, '-S', `127.0.0.1:${apiPort}`, '-t', 'api', 'api/router.php'], { cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawn(php.binary, [...php.args, '-S', `127.0.0.1:${apiPort}`, '-t', 'api', 'api/router.php'], { cwd: root, env: { ...process.env, APP_ORIGIN: process.env.APP_ORIGIN || `http://127.0.0.1:${webPort}` }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
   let childError = ''; child.stderr.on('data', data => { childError = (childError + data.toString()).slice(-2000); });
   child.stdout.resume();
   let spawnError; child.on('error', error => { spawnError = error; });
@@ -20,11 +20,17 @@ export async function startServices({ webPort = 5173, apiPort = 8787 } = {}) {
     let path;
     try { path = decodeURIComponent((req.url || '/').split('?')[0]); } catch { res.writeHead(400); res.end('Ruta inválida'); return; }
     if (path.startsWith('/api/')) {
-      const upstream = httpRequest({ hostname: '127.0.0.1', port: apiPort, path: req.url, method: req.method, headers: { ...req.headers, host: `127.0.0.1:${apiPort}` }, timeout: 5000 }, remote => {
+      let timedOut = false;
+      const upstream = httpRequest({ hostname: '127.0.0.1', port: apiPort, path: req.url, method: req.method, headers: { ...req.headers, host: `127.0.0.1:${apiPort}` }, timeout: 20000 }, remote => {
         res.writeHead(remote.statusCode || 502, remote.headers); remote.pipe(res);
       });
-      upstream.on('timeout', () => upstream.destroy());
-      upstream.on('error', () => { if (!res.headersSent) res.writeHead(502, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: { code: 'API_UNAVAILABLE', message: 'API local no disponible.' } })); });
+      upstream.on('timeout', () => { timedOut = true; upstream.destroy(); });
+      upstream.on('error', () => {
+        if (!res.headersSent) res.writeHead(timedOut ? 504 : 502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: timedOut
+          ? { code: 'API_TIMEOUT', message: 'La API tardó demasiado en responder. Comprueba la conexión central con npm run db:check.' }
+          : { code: 'API_UNAVAILABLE', message: 'No se pudo contactar con PHP. Reinicia npm run dev y revisa su terminal.' } }));
+      });
       req.pipe(upstream); return;
     }
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }); res.end(); return; }
