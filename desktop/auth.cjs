@@ -3,7 +3,8 @@ function createAuthClient(origin) {
   let cookie = '', csrf = '';
   const actions = {
     login: ['POST','/auth/login'], session: ['GET','/auth/session'], logout: ['POST','/auth/logout'],
-    users: ['GET','/admin/users'], createUser: ['POST','/admin/users'], updateUser: ['PATCH','/admin/users']
+    users: ['GET','/admin/users'], createUser: ['POST','/admin/users'], updateUser: ['PATCH','/admin/users'],
+    owners: ['GET','/owners'], createOwner: ['POST','/owners'], updateOwner: ['PATCH','/owners']
   };
   return async (action, data) => {
     if (!Object.hasOwn(actions, action)) throw new Error('Acción no permitida.');
@@ -11,7 +12,8 @@ function createAuthClient(origin) {
     const body = method === 'GET' ? undefined : JSON.stringify(data ?? {});
     if (body && Buffer.byteLength(body) > 16384) throw new Error('Solicitud demasiado grande.');
     try {
-      const response = await fetch(origin + '/api/v1' + path, {
+      const suffix = method === 'GET' && data ? '?' + new URLSearchParams(data) : '';
+      const response = await fetch(origin + '/api/v1' + path + suffix, {
         method, redirect: 'error', signal: AbortSignal.timeout(25000),
         headers: { Origin: origin, ...(cookie ? { Cookie: cookie } : {}), ...(csrf ? { 'X-CSRF-Token': csrf } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, body,
       });

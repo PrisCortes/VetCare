@@ -9,18 +9,20 @@ try {
     if ((int)$db->query("SELECT GET_LOCK('vetcare_auth_admin',10)")->fetchColumn()!==1) throw new RuntimeException('LOCK_FAILED');
     if (($argv[1] ?? '')==='migrate') {
         $db->exec('CREATE TABLE IF NOT EXISTS vc_schema_migrations (version VARCHAR(80) PRIMARY KEY, checksum CHAR(64) NOT NULL, applied_at BIGINT NOT NULL) ENGINE=InnoDB');
-        $sql=file_get_contents(__DIR__.'/../database/mariadb/001_auth.sql');
+        foreach (['001_auth','002_owners'] as $migration) {
+        $sql=file_get_contents(__DIR__.'/../database/mariadb/'.$migration.'.sql');
         if ($sql===false) throw new RuntimeException('MIGRATION_MISSING');
         $sql=str_replace("\r\n","\n",$sql);
         $checksum=hash('sha256',$sql);
-        $q=$db->prepare('SELECT checksum FROM vc_schema_migrations WHERE version=?');$q->execute(['001_auth']);$previous=$q->fetchColumn();
+        $q=$db->prepare('SELECT checksum FROM vc_schema_migrations WHERE version=?');$q->execute([$migration]);$previous=$q->fetchColumn();
         if ($previous!==false && !hash_equals($previous,$checksum)) throw new RuntimeException('MIGRATION_CHANGED');
         if ($previous===false) {
             // MariaDB confirma DDL automáticamente. Sentencias idempotentes para reintentar una interrupción.
             foreach (explode(';',$sql) as $statement) if (trim($statement)!=='') $db->exec($statement);
-            $db->prepare('INSERT INTO vc_schema_migrations VALUES(?,?,?)')->execute(['001_auth',$checksum,time()]);
+            $db->prepare('INSERT INTO vc_schema_migrations VALUES(?,?,?)')->execute([$migration,$checksum,time()]);
         }
-        echo "Esquema de autenticación preparado (001_auth).\n";
+        echo "Migración preparada: ".$migration."\n";
+        }
     } elseif (($argv[1] ?? '')==='create-admin') {
         $data=json_decode(stream_get_contents(STDIN),true,8,JSON_THROW_ON_ERROR);
         $db->beginTransaction();

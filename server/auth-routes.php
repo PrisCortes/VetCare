@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/database.php';
 require_once __DIR__.'/auth.php';
+require_once __DIR__.'/owners.php';
 
 function authBody(): array {
     if (strtolower(trim(explode(';',$_SERVER['CONTENT_TYPE'] ?? '')[0])) !== 'application/json') \VetCare\failAccess(415,'JSON_REQUIRED');
@@ -16,6 +17,7 @@ function authRoute(string $path, string $method): never {
         '/api/v1/auth/login'=>['POST'], '/api/v1/auth/session'=>['GET'],
         '/api/v1/auth/logout'=>['POST'], '/api/v1/admin/users'=>['GET','POST','PATCH'],
         '/api/v1/access'=>['GET'],
+        '/api/v1/owners'=>['GET','POST','PATCH'],
     ];
     if (!in_array($method,$routes[$path],true)) { header('Allow: '.implode(', ',$routes[$path])); respond(405,['error'=>['code'=>'METHOD_NOT_ALLOWED','message'=>'Método no permitido.']]); }
     try {
@@ -42,6 +44,18 @@ function authRoute(string $path, string $method): never {
             \VetCare\requirePermission($session,'clinical.read');
             respond(200,['user'=>\VetCare\publicUser($session),'permissions'=>['clinical.read','clinical.write',...(\VetCare\permitted($session['role'],'users.manage')?['users.manage']:[])]]);
         }
+        if ($path==='/api/v1/owners') {
+            if ($method==='GET') respond(200,\VetCare\listOwners($db,$session,$_GET));
+            $data=authBody();$operation=\VetCare\requireUuid($data['operationId']??null);
+            $lock=$db->prepare('SELECT GET_LOCK(?,5)');$lock->execute(['vc_owner_'.$operation]);
+            if((int)$lock->fetchColumn()!==1)\VetCare\failAccess(503,'TRY_AGAIN');
+            try{
+                $db->beginTransaction();$session=\VetCare\authenticated($db,$token);
+                $owner=\VetCare\saveOwner($db,$session,$data,$method==='POST');$db->commit();
+            }catch(Throwable $error){if($db->inTransaction())$db->rollBack();throw $error;}
+            finally{$release=$db->prepare('SELECT RELEASE_LOCK(?)');$release->execute(['vc_owner_'.$operation]);}
+            respond($method==='POST'?201:200,['owner'=>$owner]);
+        }
         \VetCare\requirePermission($session,'users.manage');
         if ($method==='GET') respond(200,['users'=>array_map('VetCare\\publicUser',$db->query('SELECT id,username,name,role,active FROM vc_auth_users ORDER BY username')->fetchAll())]);
         $data=authBody();
@@ -60,6 +74,12 @@ function authRoute(string $path, string $method): never {
     } catch (\VetCare\AccessError $error) {
         if (isset($db) && $db->inTransaction()) $db->rollBack();
         $messages=[
+            'INVALID_OWNER'=>'Revisa el nombre y la longitud de los campos del propietario.',
+            'INVALID_IDENTIFIER'=>'Identificador de operación no válido.', 'INVALID_FILTER'=>'Filtro o página no válidos.',
+            'OWNER_NOT_FOUND'=>'No se encontró el propietario.',
+            'OWNER_CONFLICT'=>'El propietario cambió en otra sesión. Recarga el directorio antes de editar; tu captura no se guardó.',
+            'OPERATION_REUSED'=>'La operación ya se utilizó con otros datos. Recarga y revisa el registro antes de continuar.',
+            'OWNER_HAS_ACTIVE_PATIENTS'=>'No se puede dar de baja un propietario con pacientes activos.',
             'UNAUTHENTICATED'=>'Inicia sesión para continuar.', 'INVALID_CREDENTIALS'=>'Usuario o contraseña incorrectos.',
             'FORBIDDEN'=>'Tu cuenta no tiene permiso para realizar esta acción.', 'CSRF_FAILED'=>'La solicitud no pudo validarse. Vuelve a iniciar sesión.',
             'ORIGIN_REJECTED'=>'Origen de solicitud no permitido.', 'REAUTHENTICATE'=>'Cierra sesión y vuelve a ingresar antes de administrar cuentas.',
@@ -72,6 +92,6 @@ function authRoute(string $path, string $method): never {
         respond($error->status,['error'=>['code'=>$error->reason,'message'=>$messages[$error->reason] ?? 'No se pudo completar la solicitud.']]);
     } catch (Throwable) {
         if (isset($db) && $db->inTransaction()) $db->rollBack();
-        respond(503,['error'=>['code'=>'AUTH_UNAVAILABLE','message'=>'El servicio de acceso no está disponible. Revisa la conexión y la preparación de la base central.']]);
+        respond(503,['error'=>['code'=>'SERVICE_UNAVAILABLE','message'=>'El servicio central no está disponible. Revisa la conexión y ejecuta db:migrate si hay tablas pendientes.']]);
     }
 }

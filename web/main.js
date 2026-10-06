@@ -2,6 +2,7 @@ import {createViewState,escapeHtml as e} from './view-state.js';
 import {patientsView,patientRows,ownersView,detailView,carnetView,consultationView,formFields} from './views.js';
 import {initializeDiagnostics} from './diagnostics.js';
 import {initializeAuth} from './auth.js';
+import {ownersPage,initializeOwners} from './owners.js';
 const state=createViewState(),main=document.getElementById('main'),dialog=document.getElementById('record-dialog');
 let query='',species='Todas',detailTab='historial',carnetTab='vacunas',currentRoute='',dirty=false,dialogDirty=false,dialogKind='',toastTimer;
 const routes=new Set(['pacientes','propietarios','expediente','carnet','consulta','entorno']);
@@ -15,14 +16,16 @@ function render(){
  document.querySelector('.nav-count').textContent=state.data.patients.length;
  const names={pacientes:'Pacientes',propietarios:'Propietarios',expediente:'Expediente',carnet:'Carnet sanitario',consulta:'Nueva consulta',entorno:'Estado del entorno'};
  document.getElementById('breadcrumb').textContent=names[currentRoute];document.title='VetCare · '+names[currentRoute];
- document.getElementById('mode-note').textContent=state.demo?'Demostración activa · Datos ficticios, sin guardado clínico.':'Versión en preparación · Sin datos clínicos conectados.';
+ document.getElementById('mode-note').textContent=state.demo?'Demostración activa · Datos ficticios, sin guardado clínico.':currentRoute==='propietarios'?'Propietarios · Guardado central con conexión.':'Pacientes y consultas en preparación · Propietarios disponibles en su directorio.';
  document.getElementById('clear-demo').hidden=!state.demo;
  if(currentRoute==='entorno'){main.innerHTML=document.getElementById('environment-template').innerHTML;initializeDiagnostics(document.getElementById('environment-panel')).catch(()=>notify('No se pudo completar el diagnóstico del entorno.'));}
+ else if(currentRoute==='propietarios'&&!state.demo){main.innerHTML=ownersPage();initializeOwners(document.getElementById('owners-panel'),{onDirty:value=>{dirty=value;}});}
  else main.innerHTML=({pacientes:()=>patientsView(state,query,species),propietarios:()=>ownersView(state),expediente:()=>detailView(state,detailTab),carnet:()=>carnetView(state,carnetTab),consulta:()=>consultationView(state)})[currentRoute]();
  main.focus({preventScroll:true});
  window.scrollTo({top:0,left:0,behavior:"instant"});
 }
 function openForm(kind){
+ if(kind==='propietario'&&!state.demo){if(currentRoute==='propietarios')document.querySelector('[data-owner-new]')?.click();else go('propietarios');return;}
  if(!['propietario','paciente','vacuna','desparasitacion'].includes(kind))return;
  dialogKind=kind;dialogDirty=false;
  document.getElementById('record-title').textContent={propietario:'Nuevo propietario',paciente:'Nuevo paciente',vacuna:'Registro de vacuna',desparasitacion:'Registro de desparasitación'}[kind];

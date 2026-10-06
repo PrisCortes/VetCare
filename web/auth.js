@@ -1,12 +1,14 @@
 import {escapeHtml as e} from './view-state.js';
 let csrf = '', currentUser = null;
-const actions = { login:['POST','/auth/login'], session:['GET','/auth/session'], logout:['POST','/auth/logout'], users:['GET','/admin/users'], createUser:['POST','/admin/users'], updateUser:['PATCH','/admin/users'] };
-async function request(action, data) {
+const actions = { login:['POST','/auth/login'], session:['GET','/auth/session'], logout:['POST','/auth/logout'], users:['GET','/admin/users'], createUser:['POST','/admin/users'], updateUser:['PATCH','/admin/users'], owners:['GET','/owners'],createOwner:['POST','/owners'],updateOwner:['PATCH','/owners'] };
+export async function request(action, data) {
+  if (!Object.hasOwn(actions,action)) throw new Error('Acción no permitida.');
   let response;
   if (window.vetcare?.auth) response = await window.vetcare.auth(action, data);
   else {
     const [method,path] = actions[action];
-    const result = await fetch('/api/v1' + path, {
+    const suffix=method==='GET'&&data?'?'+new URLSearchParams(data):'';
+    const result = await fetch('/api/v1' + path + suffix, {
       method, credentials:'same-origin', cache:'no-store', signal:AbortSignal.timeout(25000),
       headers:{ ...(method!=='GET'?{'Content-Type':'application/json','X-CSRF-Token':csrf}:{}) },
       ...(method!=='GET'?{body:JSON.stringify(data ?? {})}:{}),
@@ -16,7 +18,9 @@ async function request(action, data) {
   }
   if (response.status >= 400) {
     const error = new Error(response.data.error?.message || 'No se pudo completar la solicitud.');
-    error.status = response.status; throw error;
+    error.status = response.status;
+    if(response.status===401)window.dispatchEvent(new Event('vetcare:unauthenticated'));
+    throw error;
   }
   return response.data;
 }
@@ -31,6 +35,7 @@ export async function initializeAuth(onIdentityChange) {
     if (!user && modal.open) modal.close();
     if (previous?.id!==user?.id) onIdentityChange();
   }
+  window.addEventListener('vetcare:unauthenticated',()=>identity(null));
   form.addEventListener('submit',async event=>{
     event.preventDefault();const button=form.querySelector('button');button.disabled=true;notice.textContent='Verificando acceso…';
     try {
