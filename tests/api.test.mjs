@@ -17,7 +17,8 @@ test('health confirma PHP sin declarar base de datos conectada', () => {
 });
 test('rechaza escrituras a health y no revela rutas internas', () => {
   for (const method of ['POST', 'PUT', 'DELETE']) assert.equal(call(method, '/api/v1/health').status, 405);
-  for (const path of ['/api/v1/patients', '/.env', '/server/bootstrap.php']) {
+  assert.equal(call('GET','/api/v1/patients').status,401);
+  for (const path of ['/.env', '/server/bootstrap.php']) {
     assert.deepEqual(call('GET', path), { status: 404, body: { error: { code: 'NOT_FOUND', message: 'Ruta no encontrada.' } } });
   }
 });

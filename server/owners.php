@@ -62,9 +62,7 @@ function saveOwner(PDO $db,array $actor,array $data,bool $create): array {
         if(!$previous)failAccess(404,'OWNER_NOT_FOUND');
         if((int)$previous['version']!==$version)failAccess(409,'OWNER_CONFLICT');
         if(!$active){
-            // T21 añadirá vc_patients y su FK. Se conserva el contrato para bloquear bajas.
-            $exists=$db->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='vc_patients'")->fetchColumn();
-            if((int)$exists>0){$q=$db->prepare('SELECT id FROM vc_patients WHERE owner_id=? AND active=1 LIMIT 1 FOR UPDATE');$q->execute([$id]);if($q->fetch())failAccess(409,'OWNER_HAS_ACTIVE_PATIENTS');}
+            $q=$db->prepare('SELECT id FROM vc_patients WHERE owner_id=? AND active=1 LIMIT 1 FOR UPDATE');$q->execute([$id]);if($q->fetch())failAccess(409,'OWNER_HAS_ACTIVE_PATIENTS');
         }
         $version++;
         $db->prepare('UPDATE vc_owners SET name=?,phone=?,address=?,locality=?,active=?,version=?,updated_by=?,updated_at=? WHERE id=?')->execute([...array_values($fields),(int)$active,$version,$actor['id'],$now,$id]);

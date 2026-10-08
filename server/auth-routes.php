@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/database.php';
 require_once __DIR__.'/auth.php';
 require_once __DIR__.'/owners.php';
+require_once __DIR__.'/patients.php';
 
 function authBody(): array {
     if (strtolower(trim(explode(';',$_SERVER['CONTENT_TYPE'] ?? '')[0])) !== 'application/json') \VetCare\failAccess(415,'JSON_REQUIRED');
@@ -12,12 +13,19 @@ function authBody(): array {
     if (!is_array($data) || array_is_list($data)) \VetCare\failAccess(400,'INVALID_JSON');
     return $data;
 }
+function initialDirectory(PDO $db,array $user,mixed $directory):?array {
+    if(!is_string($directory)||!in_array($directory,['owners','patients'],true))return null;
+    $query=$directory==='owners'?['q'=>'','status'=>'active','page'=>'1']:['q'=>'','species'=>'','status'=>'active','page'=>'1'];
+    try{return ['action'=>$directory,'query'=>$query,'data'=>$directory==='owners'?\VetCare\listOwners($db,$user,$query):\VetCare\listPatients($db,$user,$query)];}
+    catch(PDOException){return null;} // La UI informa tablas pendientes sin impedir autenticar.
+}
 function authRoute(string $path, string $method): never {
     $routes=[
         '/api/v1/auth/login'=>['POST'], '/api/v1/auth/session'=>['GET'],
         '/api/v1/auth/logout'=>['POST'], '/api/v1/admin/users'=>['GET','POST','PATCH'],
         '/api/v1/access'=>['GET'],
         '/api/v1/owners'=>['GET','POST','PATCH'],
+        '/api/v1/patients'=>['GET','POST','PATCH'],
     ];
     if (!in_array($method,$routes[$path],true)) { header('Allow: '.implode(', ',$routes[$path])); respond(405,['error'=>['code'=>'METHOD_NOT_ALLOWED','message'=>'Método no permitido.']]); }
     try {
@@ -26,14 +34,15 @@ function authRoute(string $path, string $method): never {
         if ($path==='/api/v1/auth/login') {
             $data=authBody();$db=\VetCare\centralDatabase();
             $result=\VetCare\login($db,$data,$_SERVER['REMOTE_ADDR'] ?? 'unknown');
-            \VetCare\sessionCookie($result['token']);unset($result['token']);respond(200,$result);
+            \VetCare\sessionCookie($result['token']);unset($result['token']);
+            $result['directory']=initialDirectory($db,$result['user'],$data['directory']??null);respond(200,$result);
         }
         $token=$_COOKIE['vc_session'] ?? '';
         if (!is_string($token) || !preg_match('/\A[a-f0-9]{64}\z/D',$token)) \VetCare\failAccess(401,'UNAUTHENTICATED');
         $db=\VetCare\centralDatabase();
         $session=\VetCare\authenticated($db,$token,$path!=='/api/v1/auth/session');
         if ($write) \VetCare\requireCsrf($session,$_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
-        if ($path==='/api/v1/auth/session') respond(200,['user'=>\VetCare\publicUser($session),'csrf'=>$session['csrf']]);
+        if ($path==='/api/v1/auth/session') respond(200,['user'=>\VetCare\publicUser($session),'csrf'=>$session['csrf'],'directory'=>initialDirectory($db,$session,$_GET['directory']??null)]);
         if ($path==='/api/v1/auth/logout') {
             $db->beginTransaction();
             $db->prepare('DELETE FROM vc_auth_sessions WHERE token_hash=?')->execute([$session['token_hash']]);
@@ -44,17 +53,19 @@ function authRoute(string $path, string $method): never {
             \VetCare\requirePermission($session,'clinical.read');
             respond(200,['user'=>\VetCare\publicUser($session),'permissions'=>['clinical.read','clinical.write',...(\VetCare\permitted($session['role'],'users.manage')?['users.manage']:[])]]);
         }
-        if ($path==='/api/v1/owners') {
-            if ($method==='GET') respond(200,\VetCare\listOwners($db,$session,$_GET));
+        if (in_array($path,['/api/v1/owners','/api/v1/patients'],true)) {
+            $patients=$path==='/api/v1/patients';
+            if ($method==='GET') respond(200,$patients?\VetCare\listPatients($db,$session,$_GET):\VetCare\listOwners($db,$session,$_GET));
             $data=authBody();$operation=\VetCare\requireUuid($data['operationId']??null);
-            $lock=$db->prepare('SELECT GET_LOCK(?,5)');$lock->execute(['vc_owner_'.$operation]);
+            $lockName=($patients?'vc_patient_':'vc_owner_').$operation;
+            $lock=$db->prepare('SELECT GET_LOCK(?,5)');$lock->execute([$lockName]);
             if((int)$lock->fetchColumn()!==1)\VetCare\failAccess(503,'TRY_AGAIN');
             try{
-                $db->beginTransaction();$session=\VetCare\authenticated($db,$token);
-                $owner=\VetCare\saveOwner($db,$session,$data,$method==='POST');$db->commit();
+                $db->beginTransaction();$session=\VetCare\authenticated($db,$token,false);
+                $owner=$patients?\VetCare\savePatient($db,$session,$data,$method==='POST'):\VetCare\saveOwner($db,$session,$data,$method==='POST');$db->commit();
             }catch(Throwable $error){if($db->inTransaction())$db->rollBack();throw $error;}
-            finally{$release=$db->prepare('SELECT RELEASE_LOCK(?)');$release->execute(['vc_owner_'.$operation]);}
-            respond($method==='POST'?201:200,['owner'=>$owner]);
+            finally{$release=$db->prepare('SELECT RELEASE_LOCK(?)');$release->execute([$lockName]);}
+            respond($method==='POST'?201:200,[$patients?'patient':'owner'=>$owner]);
         }
         \VetCare\requirePermission($session,'users.manage');
         if ($method==='GET') respond(200,['users'=>array_map('VetCare\\publicUser',$db->query('SELECT id,username,name,role,active FROM vc_auth_users ORDER BY username')->fetchAll())]);
@@ -74,6 +85,13 @@ function authRoute(string $path, string $method): never {
     } catch (\VetCare\AccessError $error) {
         if (isset($db) && $db->inTransaction()) $db->rollBack();
         $messages=[
+            'INVALID_PATIENT'=>'Revisa la identificación, especie y campos del paciente.',
+            'INVALID_PATIENT_DATE'=>'La fecha debe ser válida y no estar en el futuro.',
+            'INVALID_PATIENT_AGE'=>'Indica nacimiento o una estimación completa con valor, unidad y fecha de referencia.',
+            'PATIENT_NOT_FOUND'=>'No se encontró el paciente.',
+            'PATIENT_OWNER_REQUIRED'=>'Selecciona un propietario existente.',
+            'PATIENT_OWNER_INACTIVE'=>'El propietario debe estar activo para registrar o reactivar al paciente.',
+            'PATIENT_CONFLICT'=>'El paciente cambió en otra sesión. Revisa su versión reciente antes de guardar.',
             'INVALID_OWNER'=>'Revisa el nombre y la longitud de los campos del propietario.',
             'INVALID_IDENTIFIER'=>'Identificador de operación no válido.', 'INVALID_FILTER'=>'Filtro o página no válidos.',
             'OWNER_NOT_FOUND'=>'No se encontró el propietario.',

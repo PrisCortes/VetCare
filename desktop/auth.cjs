@@ -4,7 +4,8 @@ function createAuthClient(origin) {
   const actions = {
     login: ['POST','/auth/login'], session: ['GET','/auth/session'], logout: ['POST','/auth/logout'],
     users: ['GET','/admin/users'], createUser: ['POST','/admin/users'], updateUser: ['PATCH','/admin/users'],
-    owners: ['GET','/owners'], createOwner: ['POST','/owners'], updateOwner: ['PATCH','/owners']
+    owners: ['GET','/owners'], createOwner: ['POST','/owners'], updateOwner: ['PATCH','/owners'],
+    patients: ['GET','/patients'], createPatient: ['POST','/patients'], updatePatient: ['PATCH','/patients']
   };
   return async (action, data) => {
     if (!Object.hasOwn(actions, action)) throw new Error('Acción no permitida.');

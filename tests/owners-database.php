@@ -6,7 +6,7 @@ function ensure(bool $value):void{if(!$value)throw new RuntimeException('ASSERTI
 function rejects(callable $action,string $reason):void{try{$action();}catch(\VetCare\AccessError $error){ensure($error->reason===$reason);return;}throw new RuntimeException('EXPECTED_REJECTION');}
 try{
  $db=\VetCare\centralDatabase();
- foreach(['001_auth','002_owners'] as $migration){
+ foreach(['001_auth','002_owners','003_patients'] as $migration){
   $sql=file_get_contents(__DIR__.'/../database/mariadb/'.$migration.'.sql');
   $sql=str_replace('CREATE TABLE IF NOT EXISTS','CREATE TEMPORARY TABLE',$sql);
   $sql=preg_replace('/^\s*FOREIGN KEY[^\r\n]*\r?\n/m','',$sql);

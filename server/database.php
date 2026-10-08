@@ -39,6 +39,7 @@ function databaseConfiguration(): array {
 }
 
 function centralDatabase(): PDO {
+    $started=hrtime(true);
     $config = databaseConfiguration();
     $connection = new PDO($config['dsn'], $config['user'], $config['password'], [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -56,6 +57,7 @@ function centralDatabase(): PDO {
         throw new RuntimeException('DB_TLS_REQUIRED');
     }
     $connection->exec("SET time_zone = '+00:00'");
+    if(PHP_SAPI!=='cli'&&!headers_sent())header('Server-Timing: database;dur='.round((hrtime(true)-$started)/1e6,1),false);
     return $connection;
 }
 

@@ -44,8 +44,11 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Comunicación con MariaDB y configuración práctica - T18](docs/implementacion/T18_comunicacion_central.md)
 - [Inicio de sesión y permisos - T19](docs/implementacion/T19_inicio_sesion_permisos.md)
 - [Registro y gestión de propietarios - T20](docs/implementacion/T20_propietarios.md)
+- [Pacientes, vínculo con propietario y mejora de carga - T21](docs/implementacion/T21_pacientes.md)
 
 T20 integra el directorio central de propietarios con alta, edición, baja y reactivación. Requiere `npm run db:migrate`; ver su recorrido de comprobación. La persistencia clínica offline todavía no está habilitada.
+
+T21 integra pacientes multiespecie y su relación con propietarios. Aplicar `003_patients` con `npm run db:migrate` antes de probar pacientes o bajas de propietarios. También corrige el destello de acceso al recargar, agrupa la carga inicial con la sesión y reduce peticiones repetidas. La mejora de tiempo real sigue pendiente de medición con el alojamiento.
 
 T18 incorpora el conector PHP-MariaDB y `npm run db:check`. El usuario confirmó `DB_OK` con TLS en su terminal; el despliegue remoto sigue pendiente.
 

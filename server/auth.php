@@ -45,11 +45,11 @@ function sessionValid(array $session, int $now): bool {
 }
 function authenticated(PDO $db, string $token, bool $touch = true): array {
     if (!preg_match('/\A[a-f0-9]{64}\z/D', $token)) failAccess(401,'UNAUTHENTICATED');
-    $query = $db->prepare('SELECT u.*,s.token_hash,s.csrf,s.created_at AS authenticated_at,s.last_seen,s.expires_at FROM vc_auth_sessions s JOIN vc_auth_users u ON u.id=s.user_id WHERE s.token_hash=?');
+    $query = $db->prepare('SELECT u.id,u.username,u.name,u.role,u.active,s.token_hash,s.csrf,s.created_at AS authenticated_at,s.last_seen,s.expires_at FROM vc_auth_sessions s JOIN vc_auth_users u ON u.id=s.user_id WHERE s.token_hash=?');
     $query->execute([hash('sha256',$token)]);
     $session = $query->fetch();
     if (!$session || !sessionValid($session,time())) failAccess(401,'UNAUTHENTICATED');
-    if ($touch) $db->prepare('UPDATE vc_auth_sessions SET last_seen=? WHERE token_hash=?')->execute([time(),$session['token_hash']]);
+    if ($touch && time()-(int)$session['last_seen']>=60) $db->prepare('UPDATE vc_auth_sessions SET last_seen=? WHERE token_hash=?')->execute([time(),$session['token_hash']]);
     return $session;
 }
 function requireCsrf(array $session, string $provided): void {

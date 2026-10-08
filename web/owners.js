@@ -14,11 +14,11 @@ export function initializeOwners(panel,{onDirty=()=>{},openNew=false}={}){
   for(const name of ['name','phone','address','locality'])form.elements[name].value=owner?.[name]||'';
   find('owner-editor-title').textContent=owner?'Editar propietario':'Nuevo propietario';find('owner-form-notice').textContent='';editor.hidden=false;form.elements.name.focus();
  }
- async function load(){
+ async function load(fresh=false){
   const requestNumber=++sequence;notice.textContent='Cargando propietarios…';find('owners-next').disabled=true;find('owners-prev').disabled=true;
   try{
    const filters=new FormData(find('owners-search'));
-   const result=await request('owners',{q:filters.get('q'),status:filters.get('status'),page:String(page)});
+   const result=await request('owners',{q:filters.get('q'),status:filters.get('status'),page:String(page)},{fresh});
    if(!panel.isConnected||requestNumber!==sequence)return;
    rows=result.owners;hasMore=result.hasMore;
    find('owners-rows').innerHTML=rows.length?rows.map(owner=>`<tr><td data-label="Nombre"><strong>${e(owner.name)}</strong><small>${e(owner.address||'Sin domicilio')}</small></td><td data-label="Teléfono">${e(owner.phone||'Sin teléfono')}</td><td data-label="Localidad">${e(owner.locality||'Sin localidad')}</td><td data-label="Estado">${owner.active?'Activo':'Inactivo'}</td><td data-label="Acciones"><button class="text-button" type="button" data-owner-edit="${e(owner.id)}">Editar</button><button class="text-button" type="button" data-owner-toggle="${e(owner.id)}">${owner.active?'Dar de baja':'Reactivar'}</button></td></tr>`).join(''):'<tr><td colspan="5">No hay propietarios para este filtro.</td></tr>';
@@ -38,7 +38,7 @@ export function initializeOwners(panel,{onDirty=()=>{},openNew=false}={}){
   find('owner-form-notice').textContent='Guardando en el servidor…';
   try{
    await request(editing?'updateOwner':'createOwner',{...payload,operationId:pending.operationId});
-   if(!panel.isConnected)return;pending=null;setDirty(false);editor.hidden=true;form.reset();await load();notice.textContent='Propietario guardado en MariaDB.';
+   if(!panel.isConnected)return;pending=null;setDirty(false);editor.hidden=true;form.reset();await load(true);notice.textContent='Propietario guardado en MariaDB.';
   }catch(error){
    if(error.status&&error.status<500)pending=null;
    if(panel.isConnected)find('owner-form-notice').textContent=error.message+' No se confirmó el guardado. Puedes reintentar los mismos datos.';
@@ -61,7 +61,7 @@ export function initializeOwners(panel,{onDirty=()=>{},openNew=false}={}){
    finally{busy=false;button.disabled=false;}
   }
  });
- find('owners-search').addEventListener('submit',event=>{event.preventDefault();page=1;load();});
+ find('owners-search').addEventListener('submit',event=>{event.preventDefault();page=1;load(true);});
  find('owners-prev').addEventListener('click',()=>{if(page>1){page--;load();}});
  find('owners-next').addEventListener('click',()=>{if(hasMore){page++;load();}});
  load();if(openNew)edit();

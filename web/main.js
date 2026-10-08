@@ -1,8 +1,9 @@
 import {createViewState,escapeHtml as e} from './view-state.js';
 import {patientsView,patientRows,ownersView,detailView,carnetView,consultationView,formFields} from './views.js';
 import {initializeDiagnostics} from './diagnostics.js';
-import {initializeAuth} from './auth.js';
+import {initializeAuth,authenticatedUser} from './auth.js';
 import {ownersPage,initializeOwners} from './owners.js';
+import {patientsPage,initializePatients} from './patients.js';
 const state=createViewState(),main=document.getElementById('main'),dialog=document.getElementById('record-dialog');
 let query='',species='Todas',detailTab='historial',carnetTab='vacunas',currentRoute='',dirty=false,dialogDirty=false,dialogKind='',toastTimer;
 const routes=new Set(['pacientes','propietarios','expediente','carnet','consulta','entorno']);
@@ -11,20 +12,24 @@ function notify(text){const box=document.getElementById('toast');box.textContent
 function leaveDraft(){return !dirty||window.confirm('Esta captura no está guardada. ¿Quieres descartarla?');}
 function go(destination){if(!routes.has(destination)||destination===currentRoute)return;if(!leaveDraft())return;dirty=false;location.hash=destination;}
 function render(){
+ if(!authenticatedUser()){currentRoute='';main.replaceChildren();return;}
  currentRoute=route();dirty=false;
  document.querySelectorAll('[data-nav]').forEach(link=>{const active=link.dataset.nav===(currentRoute==='consulta'?'expediente':currentRoute);if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
  document.querySelector('.nav-count').textContent=state.data.patients.length;
+ document.querySelector('.nav-count').hidden=!state.demo;
  const names={pacientes:'Pacientes',propietarios:'Propietarios',expediente:'Expediente',carnet:'Carnet sanitario',consulta:'Nueva consulta',entorno:'Estado del entorno'};
  document.getElementById('breadcrumb').textContent=names[currentRoute];document.title='VetCare · '+names[currentRoute];
- document.getElementById('mode-note').textContent=state.demo?'Demostración activa · Datos ficticios, sin guardado clínico.':currentRoute==='propietarios'?'Propietarios · Guardado central con conexión.':'Pacientes y consultas en preparación · Propietarios disponibles en su directorio.';
+ document.getElementById('mode-note').textContent=state.demo?'Demostración activa · Datos ficticios, sin guardado clínico.':['propietarios','pacientes'].includes(currentRoute)?'Directorio central · Guardado con conexión.':'Consultas y carnet en preparación.';
  document.getElementById('clear-demo').hidden=!state.demo;
  if(currentRoute==='entorno'){main.innerHTML=document.getElementById('environment-template').innerHTML;initializeDiagnostics(document.getElementById('environment-panel')).catch(()=>notify('No se pudo completar el diagnóstico del entorno.'));}
  else if(currentRoute==='propietarios'&&!state.demo){main.innerHTML=ownersPage();initializeOwners(document.getElementById('owners-panel'),{onDirty:value=>{dirty=value;}});}
+ else if(currentRoute==='pacientes'&&!state.demo){main.innerHTML=patientsPage();initializePatients(document.getElementById('patients-panel'),{onDirty:value=>{dirty=value;}});}
  else main.innerHTML=({pacientes:()=>patientsView(state,query,species),propietarios:()=>ownersView(state),expediente:()=>detailView(state,detailTab),carnet:()=>carnetView(state,carnetTab),consulta:()=>consultationView(state)})[currentRoute]();
  main.focus({preventScroll:true});
  window.scrollTo({top:0,left:0,behavior:"instant"});
 }
 function openForm(kind){
+ if(kind==='paciente'&&!state.demo){if(currentRoute==='pacientes')document.querySelector('[data-patient-new]')?.click();else go('pacientes');return;}
  if(kind==='propietario'&&!state.demo){if(currentRoute==='propietarios')document.querySelector('[data-owner-new]')?.click();else go('propietarios');return;}
  if(!['propietario','paciente','vacuna','desparasitacion'].includes(kind))return;
  dialogKind=kind;dialogDirty=false;
@@ -62,5 +67,4 @@ document.addEventListener('submit',event=>{
 dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog();});
 window.addEventListener('hashchange',()=>{if(route()===currentRoute)return;if(!leaveDraft()){history.replaceState(null,'','#'+currentRoute);return;}render();});
 window.addEventListener('beforeunload',event=>{if(dirty||dialogDirty){event.preventDefault();event.returnValue='';}});
-render();
 await initializeAuth(()=>{state.clearDemo();query='';species='Todas';dirty=false;dialogDirty=false;if(dialog.open)dialog.close();render();});
