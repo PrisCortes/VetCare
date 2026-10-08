@@ -10,10 +10,13 @@ test('web y PHP locales: salud, errores y aislamiento de archivos', async () => 
   const services = await startServices({ webPort, apiPort });
   try {
     const page = await fetch(services.url); assert.equal(page.status, 200); assert.match(await page.text(), /VetCare/);
-    for (const asset of ['patients.js','owners.js','auth.js','auth.css','main.js','view-state.js','views.js','diagnostics.js','styles.css','mobile.css','application.css']) assert.equal((await fetch(services.url + '/' + asset)).status, 200, asset);
+    for (const asset of ['attention.js','attention-validation.js','attention.css','patients.js','owners.js','auth.js','auth.css','main.js','view-state.js','views.js','diagnostics.js','styles.css','mobile.css','application.css']) assert.equal((await fetch(services.url + '/' + asset)).status, 200, asset);
     const health = await fetch(services.url + '/api/v1/health'); assert.equal(health.status, 200); assert.deepEqual(await health.json(), { service: 'vetcare-api', status: 'ok', database: 'not_checked' });
     const anonymous=await fetch(services.url+'/api/v1/auth/session');assert.equal(anonymous.status,401);
     const anonymousOwners=await fetch(services.url+'/api/v1/owners');assert.equal(anonymousOwners.status,401);
+    const anonymousAttention=await fetch(services.url+'/api/v1/attention/validate',{method:'POST',headers:{Origin:process.env.APP_ORIGIN||services.url,'Content-Type':'application/json'},body:'{}'});assert.equal(anonymousAttention.status,401);
+    const wrongAttentionMethod=await fetch(services.url+'/api/v1/attention/validate');assert.equal(wrongAttentionMethod.status,405);
+    const wrongAttentionOrigin=await fetch(services.url+'/api/v1/attention/validate',{method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:'{}'});assert.equal(wrongAttentionOrigin.status,403);
     const deleteOwner=await fetch(services.url+'/api/v1/owners',{method:'DELETE'});assert.equal(deleteOwner.status,405);
     const crossOriginOwner=await fetch(services.url+'/api/v1/owners',{method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:JSON.stringify({name:'test'})});assert.equal(crossOriginOwner.status,403);
     const wrongOrigin=await fetch(services.url+'/api/v1/auth/login',{method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:JSON.stringify({username:'test',password:'not-a-real-password'})});

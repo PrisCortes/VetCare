@@ -4,11 +4,12 @@ require_once __DIR__.'/database.php';
 require_once __DIR__.'/auth.php';
 require_once __DIR__.'/owners.php';
 require_once __DIR__.'/patients.php';
+require_once __DIR__.'/attention.php';
 
-function authBody(): array {
+function authBody(int $maxBytes=16384): array {
     if (strtolower(trim(explode(';',$_SERVER['CONTENT_TYPE'] ?? '')[0])) !== 'application/json') \VetCare\failAccess(415,'JSON_REQUIRED');
-    $raw=file_get_contents('php://input',false,null,0,16385);
-    if ($raw === false || strlen($raw)>16384) \VetCare\failAccess(413,'BODY_TOO_LARGE');
+    $raw=file_get_contents('php://input',false,null,0,$maxBytes+1);
+    if ($raw === false || strlen($raw)>$maxBytes) \VetCare\failAccess(413,'BODY_TOO_LARGE');
     try { $data=json_decode($raw,true,16,JSON_THROW_ON_ERROR); } catch (JsonException) { \VetCare\failAccess(400,'INVALID_JSON'); }
     if (!is_array($data) || array_is_list($data)) \VetCare\failAccess(400,'INVALID_JSON');
     return $data;
@@ -26,6 +27,7 @@ function authRoute(string $path, string $method): never {
         '/api/v1/access'=>['GET'],
         '/api/v1/owners'=>['GET','POST','PATCH'],
         '/api/v1/patients'=>['GET','POST','PATCH'],
+        '/api/v1/attention/validate'=>['POST'],
     ];
     if (!in_array($method,$routes[$path],true)) { header('Allow: '.implode(', ',$routes[$path])); respond(405,['error'=>['code'=>'METHOD_NOT_ALLOWED','message'=>'Método no permitido.']]); }
     try {
@@ -42,6 +44,11 @@ function authRoute(string $path, string $method): never {
         $db=\VetCare\centralDatabase();
         $session=\VetCare\authenticated($db,$token,$path!=='/api/v1/auth/session');
         if ($write) \VetCare\requireCsrf($session,$_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+        if($path==='/api/v1/attention/validate'){
+            $result=\VetCare\validatePatientAttention($db,$session,authBody(524288));
+            if(!$result['valid'])respond(422,['error'=>['code'=>'INVALID_ATTENTION','message'=>'Revisa los campos indicados.'],'fields'=>$result['errors']]);
+            respond(200,['validated'=>true,'saved'=>false,'patient'=>$result['patient'],'data'=>$result['data']]);
+        }
         if ($path==='/api/v1/auth/session') respond(200,['user'=>\VetCare\publicUser($session),'csrf'=>$session['csrf'],'directory'=>initialDirectory($db,$session,$_GET['directory']??null)]);
         if ($path==='/api/v1/auth/logout') {
             $db->beginTransaction();
@@ -85,6 +92,8 @@ function authRoute(string $path, string $method): never {
     } catch (\VetCare\AccessError $error) {
         if (isset($db) && $db->inTransaction()) $db->rollBack();
         $messages=[
+            'PATIENT_INACTIVE'=>'Reactiva al paciente antes de preparar una nueva atención.',
+            'PATIENT_CONTEXT_CHANGED'=>'La ficha del paciente cambió. Vuelve al directorio y selecciona su versión reciente; no se guardó la captura.',
             'INVALID_PATIENT'=>'Revisa la identificación, especie y campos del paciente.',
             'INVALID_PATIENT_DATE'=>'La fecha debe ser válida y no estar en el futuro.',
             'INVALID_PATIENT_AGE'=>'Indica nacimiento o una estimación completa con valor, unidad y fecha de referencia.',

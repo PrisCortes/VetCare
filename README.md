@@ -45,6 +45,9 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Inicio de sesión y permisos - T19](docs/implementacion/T19_inicio_sesion_permisos.md)
 - [Registro y gestión de propietarios - T20](docs/implementacion/T20_propietarios.md)
 - [Pacientes, vínculo con propietario y mejora de carga - T21](docs/implementacion/T21_pacientes.md)
+- [Formularios y validación de atención - T22](docs/implementacion/T22_formularios_atencion.md)
+
+T22 permite preparar y validar una atención desde un paciente central. La vista previa indica explícitamente que no se ha guardado. La persistencia de consultas corresponde a T23; T22 no requiere una nueva migración.
 
 T20 integra el directorio central de propietarios con alta, edición, baja y reactivación. Requiere `npm run db:migrate`; ver su recorrido de comprobación. La persistencia clínica offline todavía no está habilitada.
 

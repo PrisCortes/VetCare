@@ -4,7 +4,9 @@ import {initializeDiagnostics} from './diagnostics.js';
 import {initializeAuth,authenticatedUser} from './auth.js';
 import {ownersPage,initializeOwners} from './owners.js';
 import {patientsPage,initializePatients} from './patients.js';
+import {attentionPage,initializeAttention} from './attention.js';
 const state=createViewState(),main=document.getElementById('main'),dialog=document.getElementById('record-dialog');
+let attentionPatient=null;
 let query='',species='Todas',detailTab='historial',carnetTab='vacunas',currentRoute='',dirty=false,dialogDirty=false,dialogKind='',toastTimer;
 const routes=new Set(['pacientes','propietarios','expediente','carnet','consulta','entorno']);
 function route(){const value=location.hash.slice(1);return routes.has(value)?value:'pacientes';}
@@ -23,7 +25,8 @@ function render(){
  document.getElementById('clear-demo').hidden=!state.demo;
  if(currentRoute==='entorno'){main.innerHTML=document.getElementById('environment-template').innerHTML;initializeDiagnostics(document.getElementById('environment-panel')).catch(()=>notify('No se pudo completar el diagnóstico del entorno.'));}
  else if(currentRoute==='propietarios'&&!state.demo){main.innerHTML=ownersPage();initializeOwners(document.getElementById('owners-panel'),{onDirty:value=>{dirty=value;}});}
- else if(currentRoute==='pacientes'&&!state.demo){main.innerHTML=patientsPage();initializePatients(document.getElementById('patients-panel'),{onDirty:value=>{dirty=value;}});}
+ else if(currentRoute==='pacientes'&&!state.demo){main.innerHTML=patientsPage();initializePatients(document.getElementById('patients-panel'),{onDirty:value=>{dirty=value;},onAttention:patient=>{attentionPatient=patient;go('consulta');}});}
+ else if(currentRoute==='consulta'&&!state.demo){main.innerHTML=attentionPage(attentionPatient);if(attentionPatient)initializeAttention(document.getElementById('attention-panel'),attentionPatient,{onDirty:value=>{dirty=value;}});}
  else main.innerHTML=({pacientes:()=>patientsView(state,query,species),propietarios:()=>ownersView(state),expediente:()=>detailView(state,detailTab),carnet:()=>carnetView(state,carnetTab),consulta:()=>consultationView(state)})[currentRoute]();
  main.focus({preventScroll:true});
  window.scrollTo({top:0,left:0,behavior:"instant"});
@@ -67,4 +70,4 @@ document.addEventListener('submit',event=>{
 dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog();});
 window.addEventListener('hashchange',()=>{if(route()===currentRoute)return;if(!leaveDraft()){history.replaceState(null,'','#'+currentRoute);return;}render();});
 window.addEventListener('beforeunload',event=>{if(dirty||dialogDirty){event.preventDefault();event.returnValue='';}});
-await initializeAuth(()=>{state.clearDemo();query='';species='Todas';dirty=false;dialogDirty=false;if(dialog.open)dialog.close();render();});
+await initializeAuth(()=>{attentionPatient=null;state.clearDemo();query='';species='Todas';dirty=false;dialogDirty=false;if(dialog.open)dialog.close();render();});

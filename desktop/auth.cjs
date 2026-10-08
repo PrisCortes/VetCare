@@ -5,13 +5,14 @@ function createAuthClient(origin) {
     login: ['POST','/auth/login'], session: ['GET','/auth/session'], logout: ['POST','/auth/logout'],
     users: ['GET','/admin/users'], createUser: ['POST','/admin/users'], updateUser: ['PATCH','/admin/users'],
     owners: ['GET','/owners'], createOwner: ['POST','/owners'], updateOwner: ['PATCH','/owners'],
-    patients: ['GET','/patients'], createPatient: ['POST','/patients'], updatePatient: ['PATCH','/patients']
+    patients: ['GET','/patients'], createPatient: ['POST','/patients'], updatePatient: ['PATCH','/patients'],
+    validateAttention: ['POST','/attention/validate']
   };
   return async (action, data) => {
     if (!Object.hasOwn(actions, action)) throw new Error('Acción no permitida.');
     const [method, path] = actions[action];
     const body = method === 'GET' ? undefined : JSON.stringify(data ?? {});
-    if (body && Buffer.byteLength(body) > 16384) throw new Error('Solicitud demasiado grande.');
+    if (body && Buffer.byteLength(body) > (action==='validateAttention'?524288:16384)) throw new Error('Solicitud demasiado grande.');
     try {
       const suffix = method === 'GET' && data ? '?' + new URLSearchParams(data) : '';
       const response = await fetch(origin + '/api/v1' + path + suffix, {
