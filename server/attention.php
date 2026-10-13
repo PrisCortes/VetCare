@@ -37,9 +37,18 @@ function attentionFields(array $input,?string $birthDate=null,?string $today=nul
 function validatePatientAttention(PDO $db,array $actor,array $input):array{
  requirePermission($actor,'clinical.write');$id=requireUuid($input['patientId']??null);
  $q=$db->prepare('SELECT p.*,o.name AS owner_name FROM vc_patients p JOIN vc_owners o ON o.id=p.owner_id WHERE p.id=?');$q->execute([$id]);$patient=$q->fetch();
- if(!$patient)failAccess(404,'PATIENT_NOT_FOUND');if(!(bool)$patient['active'])failAccess(409,'PATIENT_INACTIVE');
+ if(!$patient)failAccess(404,'PATIENT_NOT_FOUND');
+ $birth=$patient['birth_date'];$correction=false;
+ if(isset($input['id'])){
+  if(($input['kind']??null)!=='consulta')failAccess(422,'CONSULTATION_ONLY');
+  $consultationId=requireUuid($input['id']);$q=$db->prepare('SELECT * FROM vc_consultations WHERE id=?');$q->execute([$consultationId]);$consultation=$q->fetch();
+  if(!$consultation)failAccess(404,'CONSULTATION_NOT_FOUND');if($consultation['patient_id']!==$id)failAccess(409,'CONSULTATION_PATIENT_IMMUTABLE');
+  if(!is_int($input['version']??null)||(int)$consultation['version']!==$input['version'])failAccess(409,'CONSULTATION_CONFLICT');
+  $birth=json_decode($consultation['age_snapshot'],true,8,JSON_THROW_ON_ERROR)['birthDate'];$correction=true;
+ }
+ if(!(bool)$patient['active']&&!$correction)failAccess(409,'PATIENT_INACTIVE');
  if(!is_int($input['patientVersion']??null)||(int)$patient['version']!==$input['patientVersion'])failAccess(409,'PATIENT_CONTEXT_CHANGED');
- $result=attentionFields($input,$patient['birth_date']);
+ $result=attentionFields($input,$birth);
  if($result['valid'])$result['patient']=publicPatient($patient);
  return $result;
 }

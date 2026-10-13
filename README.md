@@ -46,6 +46,9 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Registro y gestión de propietarios - T20](docs/implementacion/T20_propietarios.md)
 - [Pacientes, vínculo con propietario y mejora de carga - T21](docs/implementacion/T21_pacientes.md)
 - [Formularios y validación de atención - T22](docs/implementacion/T22_formularios_atencion.md)
+- [Guardado de consultas y tratamientos - T23](docs/implementacion/T23_consultas_tratamientos.md)
+
+T23 habilita Guardar consulta y Guardar corrección en el formulario conectado, con recuperación de registros y versiones. Aplicar `004_consultations` con `npm run db:migrate`. Revisar captura sigue siendo una operación sin guardado; los eventos sanitarios todavía no se persisten.
 
 T22 permite preparar y validar una atención desde un paciente central. La vista previa indica explícitamente que no se ha guardado. La persistencia de consultas corresponde a T23; T22 no requiere una nueva migración.
 

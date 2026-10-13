@@ -5,6 +5,7 @@ require_once __DIR__.'/auth.php';
 require_once __DIR__.'/owners.php';
 require_once __DIR__.'/patients.php';
 require_once __DIR__.'/attention.php';
+require_once __DIR__.'/consultations.php';
 
 function authBody(int $maxBytes=16384): array {
     if (strtolower(trim(explode(';',$_SERVER['CONTENT_TYPE'] ?? '')[0])) !== 'application/json') \VetCare\failAccess(415,'JSON_REQUIRED');
@@ -28,6 +29,7 @@ function authRoute(string $path, string $method): never {
         '/api/v1/owners'=>['GET','POST','PATCH'],
         '/api/v1/patients'=>['GET','POST','PATCH'],
         '/api/v1/attention/validate'=>['POST'],
+        '/api/v1/consultations'=>['GET','POST','PATCH'],
     ];
     if (!in_array($method,$routes[$path],true)) { header('Allow: '.implode(', ',$routes[$path])); respond(405,['error'=>['code'=>'METHOD_NOT_ALLOWED','message'=>'Método no permitido.']]); }
     try {
@@ -44,6 +46,16 @@ function authRoute(string $path, string $method): never {
         $db=\VetCare\centralDatabase();
         $session=\VetCare\authenticated($db,$token,$path!=='/api/v1/auth/session');
         if ($write) \VetCare\requireCsrf($session,$_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+        if($path==='/api/v1/consultations'){
+            if($method==='GET')respond(200,\VetCare\listConsultations($db,$session,$_GET));
+            $input=authBody(524288);$operation=\VetCare\requireUuid($input['operationId']??null);$lockName='vc_consult_'.$operation;
+            $q=$db->prepare('SELECT GET_LOCK(?,5)');$q->execute([$lockName]);if((int)$q->fetchColumn()!==1)\VetCare\failAccess(503,'TRY_AGAIN');
+            try{$db->beginTransaction();$session=\VetCare\authenticated($db,$token,false);$result=\VetCare\saveConsultation($db,$session,$input,$method==='POST');if($result['saved'])$db->commit();else $db->rollBack();}
+            catch(Throwable $error){if($db->inTransaction())$db->rollBack();throw $error;}
+            finally{$q=$db->prepare('SELECT RELEASE_LOCK(?)');$q->execute([$lockName]);}
+            if(!$result['saved'])respond(422,['error'=>['code'=>'INVALID_ATTENTION','message'=>'Revisa los campos indicados.'],'fields'=>$result['fields']]);
+            respond($method==='POST'?201:200,$result);
+        }
         if($path==='/api/v1/attention/validate'){
             $result=\VetCare\validatePatientAttention($db,$session,authBody(524288));
             if(!$result['valid'])respond(422,['error'=>['code'=>'INVALID_ATTENTION','message'=>'Revisa los campos indicados.'],'fields'=>$result['errors']]);
@@ -92,6 +104,11 @@ function authRoute(string $path, string $method): never {
     } catch (\VetCare\AccessError $error) {
         if (isset($db) && $db->inTransaction()) $db->rollBack();
         $messages=[
+            'CONSULTATION_ONLY'=>'Solo está habilitado el guardado de consultas y tratamientos.',
+            'INVALID_CONSULTATION_VERSION'=>'Versión de consulta no válida.',
+            'CONSULTATION_NOT_FOUND'=>'No se encontró la consulta.',
+            'CONSULTATION_PATIENT_IMMUTABLE'=>'Una corrección no puede cambiar el paciente de la consulta.',
+            'CONSULTATION_CONFLICT'=>'Otra sesión corrigió esta consulta. Recarga sus registros antes de continuar.',
             'PATIENT_INACTIVE'=>'Reactiva al paciente antes de preparar una nueva atención.',
             'PATIENT_CONTEXT_CHANGED'=>'La ficha del paciente cambió. Vuelve al directorio y selecciona su versión reciente; no se guardó la captura.',
             'INVALID_PATIENT'=>'Revisa la identificación, especie y campos del paciente.',
