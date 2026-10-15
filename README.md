@@ -47,6 +47,9 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Pacientes, vínculo con propietario y mejora de carga - T21](docs/implementacion/T21_pacientes.md)
 - [Formularios y validación de atención - T22](docs/implementacion/T22_formularios_atencion.md)
 - [Guardado de consultas y tratamientos - T23](docs/implementacion/T23_consultas_tratamientos.md)
+- [Expediente, antecedentes y versiones - T24](docs/implementacion/T24_historial_clinico.md)
+
+T24 incorpora Ver expediente desde pacientes, consultas por fecha, filtros, último peso con origen y versiones de solo lectura. Utiliza las tablas de T23; no añade migraciones. El historial sanitario completo y la persistencia offline siguen pendientes.
 
 T23 habilita Guardar consulta y Guardar corrección en el formulario conectado, con recuperación de registros y versiones. Aplicar `004_consultations` con `npm run db:migrate`. Revisar captura sigue siendo una operación sin guardado; los eventos sanitarios todavía no se persisten.
 

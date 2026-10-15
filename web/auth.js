@@ -8,13 +8,14 @@ export const authenticatedUser=()=>currentUser;
 const actions = { login:['POST','/auth/login'], session:['GET','/auth/session'], logout:['POST','/auth/logout'], users:['GET','/admin/users'], createUser:['POST','/admin/users'], updateUser:['PATCH','/admin/users'], owners:['GET','/owners'],createOwner:['POST','/owners'],updateOwner:['PATCH','/owners'] };
 Object.assign(actions,{patients:['GET','/patients'],createPatient:['POST','/patients'],updatePatient:['PATCH','/patients'],validateAttention:['POST','/attention/validate']});
 Object.assign(actions,{consultations:['GET','/consultations'],createConsultation:['POST','/consultations'],updateConsultation:['PATCH','/consultations']});
+Object.assign(actions,{history:['GET','/history'],consultationVersions:['GET','/consultation-versions']});
 export async function request(action, data, {fresh=false}={}) {
   if (!Object.hasOwn(actions,action)) throw new Error('Acción no permitida.');
   const cacheable=['owners','patients'].includes(action)&&!!currentUser;
   const cacheKey=JSON.stringify([currentUser?.id,action,data??null]);
   const cached=directoryCache.get(cacheKey);
   if(cacheable&&!fresh&&cached&&Date.now()-cached.at<15000)return structuredClone(cached.data);
-  if(!['owners','patients','session','users','validateAttention','consultations'].includes(action))clearDirectories();
+  if(!['owners','patients','session','users','validateAttention','consultations','history','consultationVersions'].includes(action))clearDirectories();
   const generation=directoryGeneration,identityAtStart=currentUser?.id;
   let response;
   if (window.vetcare?.auth) response = await window.vetcare.auth(action, data);
@@ -36,7 +37,7 @@ export async function request(action, data, {fresh=false}={}) {
     if(response.status===401)window.dispatchEvent(new Event('vetcare:unauthenticated'));
     throw error;
   }
-  if(!['owners','patients','session','users','validateAttention','consultations'].includes(action))clearDirectories();
+  if(!['owners','patients','session','users','validateAttention','consultations','history','consultationVersions'].includes(action))clearDirectories();
   if(cacheable&&generation===directoryGeneration&&identityAtStart===currentUser?.id){if(directoryCache.size>=50)directoryCache.delete(directoryCache.keys().next().value);directoryCache.set(cacheKey,{at:Date.now(),data:structuredClone(response.data)});}
   return response.data;
 }

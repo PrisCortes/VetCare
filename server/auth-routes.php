@@ -6,6 +6,7 @@ require_once __DIR__.'/owners.php';
 require_once __DIR__.'/patients.php';
 require_once __DIR__.'/attention.php';
 require_once __DIR__.'/consultations.php';
+require_once __DIR__.'/history.php';
 
 function authBody(int $maxBytes=16384): array {
     if (strtolower(trim(explode(';',$_SERVER['CONTENT_TYPE'] ?? '')[0])) !== 'application/json') \VetCare\failAccess(415,'JSON_REQUIRED');
@@ -30,6 +31,8 @@ function authRoute(string $path, string $method): never {
         '/api/v1/patients'=>['GET','POST','PATCH'],
         '/api/v1/attention/validate'=>['POST'],
         '/api/v1/consultations'=>['GET','POST','PATCH'],
+        '/api/v1/history'=>['GET'],
+        '/api/v1/consultation-versions'=>['GET'],
     ];
     if (!in_array($method,$routes[$path],true)) { header('Allow: '.implode(', ',$routes[$path])); respond(405,['error'=>['code'=>'METHOD_NOT_ALLOWED','message'=>'Método no permitido.']]); }
     try {
@@ -46,6 +49,8 @@ function authRoute(string $path, string $method): never {
         $db=\VetCare\centralDatabase();
         $session=\VetCare\authenticated($db,$token,$path!=='/api/v1/auth/session');
         if ($write) \VetCare\requireCsrf($session,$_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+        if($path==='/api/v1/history')respond(200,\VetCare\patientHistory($db,$session,$_GET));
+        if($path==='/api/v1/consultation-versions')respond(200,\VetCare\consultationVersions($db,$session,$_GET));
         if($path==='/api/v1/consultations'){
             if($method==='GET')respond(200,\VetCare\listConsultations($db,$session,$_GET));
             $input=authBody(524288);$operation=\VetCare\requireUuid($input['operationId']??null);$lockName='vc_consult_'.$operation;

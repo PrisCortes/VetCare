@@ -3,7 +3,7 @@ import {request} from './auth.js';
 import {validateAttention} from './attention-validation.js';
 const names={consulta:'Consulta',vacuna:'Vacunación',desparasitacion:'Desparasitación'};
 export function consultationPreview(record){return `<dl><dt>Fecha</dt><dd>${e(record.date)}</dd><dt>Diagnóstico o motivo</dt><dd>${e(record.reason)}</dd><dt>Tratamiento</dt><dd>${e(record.treatment||'Sin tratamiento registrado')}</dd><dt>Observaciones</dt><dd>${e(record.notes||'Sin observaciones')}</dd>${[['weight','Peso',1000,'kg'],['temperature','Temperatura',100,'°C'],['heartRate','FC',1,'latidos/min'],['respiratoryRate','FR',1,'respiraciones/min']].filter(([key])=>record[key]!==null&&record[key]!==undefined).map(([key,label,scale,unit])=>`<dt>${label}</dt><dd>${e(record[key]/scale)} ${unit}</dd>`).join('')}</dl>`;}
-export function mountAttention(panel,patient,{onDirty=()=>{},renderFields}={}){
+export function mountAttention(panel,patient,{onDirty=()=>{},renderFields,initialConsultation=null}={}){
  let kind='consulta',dirty=false,busy=false,revision=0,editing=null,pending=null,savedRevision=-1,rows=[],page=1,more=false,loadSequence=0;
  const find=id=>panel.querySelector('#'+id),form=find('attention-form'),notice=find('attention-notice'),preview=find('attention-preview'),summary=find('attention-errors');
  const setDirty=value=>{dirty=value;onDirty(value);};
@@ -54,5 +54,5 @@ export function mountAttention(panel,patient,{onDirty=()=>{},renderFields}={}){
   }catch(error){if(error.status&&error.status<500)pending=null;if(panel.isConnected){errors(error.fields??{});notice.textContent=error.message+(save?' No se confirmó el guardado; puedes reintentar los mismos datos.':' No se guardó información.');}}
   finally{busy=false;if(panel.isConnected){form.querySelectorAll('input,textarea,button').forEach(control=>control.disabled=false);buttons();}}
  });
- paint();
+ paint(initialConsultation);
 }
