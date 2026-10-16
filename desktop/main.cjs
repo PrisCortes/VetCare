@@ -1,8 +1,9 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, safeStorage } = require('electron');
 const path = require('node:path');
 const { openLocalStore } = require('./storage.cjs');
 const { createAuthClient } = require('./auth.cjs');
-let window, storage;
+const { createOfflineController } = require('./offline-controller.cjs');
+let window, storage, offline;
 app.whenReady().then(async () => {
   const source = process.env.VETCARE_DEV_URL;
   if (!source || !/^http:\/\/127\.0\.0\.1:\d+$/.test(source)) { console.error('Inicia el entorno mediante npm run dev:desktop.'); app.quit(); return; }
@@ -18,7 +19,10 @@ app.whenReady().then(async () => {
     if (event.sender !== window.webContents || !event.senderFrame || event.senderFrame !== window.webContents.mainFrame || new URL(event.senderFrame.url).origin !== origin) throw new Error('Origen no permitido.');
   };
   const authentication = createAuthClient(origin);
-  ipcMain.handle('vetcare:auth', (event, action, data) => { authorize(event); return authentication(action, data); });
+  offline=createOfflineController({directory:path.join(app.getPath('userData'),'offline-v1'),origin,remote:authentication,safeStorage});
+  let work=Promise.resolve();const serial=fn=>{const result=work.then(fn);work=result.catch(()=>{});return result;};
+  ipcMain.handle('vetcare:auth', (event, action, data) => { authorize(event); return serial(()=>offline.route(action, data)); });
+  ipcMain.handle('vetcare:offline', (event, action, data) => { authorize(event); return serial(()=>offline.command(action,data)); });
   ipcMain.handle('vetcare:environment', event => { authorize(event); return { client: 'desktop', platform: process.platform, stage: 'T17', persistence: true }; });
   const storageAction = (event, action) => {
     authorize(event);
@@ -32,4 +36,4 @@ app.whenReady().then(async () => {
   try { await window.loadURL(source); } catch { console.error('No se pudo abrir la web local.'); app.quit(); }
 });
 app.on('window-all-closed', () => app.quit());
-app.on('will-quit', () => { if (storage) storage.close(); });
+app.on('will-quit', () => { if (storage) storage.close();offline?.close(); });

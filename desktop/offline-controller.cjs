@@ -1,0 +1,49 @@
+const {readFile}=require('node:fs/promises');
+const {join}=require('node:path');
+const {createOfflineVault}=require('./offline-vault.cjs');
+const {offlineAction}=require('./offline-domain.cjs');
+function createOfflineController({directory,origin,remote,safeStorage,trustedPublicKey=null}){
+ let vaultPromise=null,vault=null,mode='online';
+ const getVault=async()=>{
+  if(!vaultPromise)vaultPromise=(async()=>{
+   const publicKey=trustedPublicKey??await readFile(join(__dirname,'..','config','offline-public.pem'),'utf8');
+   vault=await createOfflineVault({directory,issuer:origin,publicKey,protector:{available:()=>safeStorage.isAsyncEncryptionAvailable(),encrypt:text=>safeStorage.encryptStringAsync(text),decrypt:data=>safeStorage.decryptStringAsync(data)}});return vault;
+  })().catch(()=>{vaultPromise=null;throw new Error('No se pudo abrir el acceso local. Ejecuta npm run offline:keys y comprueba la protección de claves de Windows.');});
+  return vaultPromise;
+ };
+ const errorResponse=(error,status=422)=>({status:error.status??status,data:{error:{code:'OFFLINE_ERROR',message:error.message},fields:error.fields??{}}});
+ return {
+  async command(action,data={}){
+   try{
+    const local=await getVault();
+    if(action==='profiles')return {ok:true,profiles:local.profiles()};
+    if(action==='status'){if(mode!=='offline')return {ok:true,offline:false};const context=await local.access(false);return {ok:true,offline:true,pending:context.store.pendingCount()};}
+    if(action==='activity'){if(mode==='offline')await local.access(true);return {ok:true};}
+    if(action==='prepare'){
+     if(mode!=='online')throw new Error('Inicia sesión con conexión para preparar o renovar este equipo.');
+     // Validar la clave antes de exportar datos centrales.
+     require('./offline-crypto.cjs').passwordVerifier(data.password);
+     const result=await remote('offlineBootstrap',{deviceId:local.deviceId});if(result.status!==200)throw new Error(result.data.error?.message||'No se pudo autorizar el equipo.');
+     const prepared=await local.prepare(result.data,data.password);return {ok:true,...prepared};
+    }
+    if(action==='unlock'){const user=await local.unlock(data.id,data.password);mode='offline';return {ok:true,user};}
+    if(action==='lock'){local.lock();mode='online';remote.clearSession();return {ok:true};}
+    throw new Error('Acción local no permitida.');
+   }catch(error){return {ok:false,message:error.message};}
+  },
+  async route(action,data){
+   if(action==='offlineBootstrap')return errorResponse(new Error('Utiliza la preparación de acceso local.'),403);
+   if(action==='login'){const result=await remote(action,data);if(result.status===200){vault?.lock();mode='online';}return result;}
+   if(mode!=='offline')return remote(action,data);
+   if(action==='logout'){vault?.lock();mode='online';remote.clearSession();return {status:200,data:{ok:true}};}
+   let context;
+   try{context=await vault.access(action!=='session');}catch(error){vault?.lock();return errorResponse(error,401);}
+   try{
+    if(action==='session')return {status:200,data:{user:context.user,local:true,pending:context.store.pendingCount()}};
+    const result=await offlineAction(context.store,context.user,action,data??{},{nowMs:context.now});return {status:200,data:{...result,pending:context.store.pendingCount()}};
+   }catch(error){return errorResponse(error);}
+  },
+  close(){vault?.close();}
+ };
+}
+module.exports={createOfflineController};

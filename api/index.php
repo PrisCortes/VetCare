@@ -3,7 +3,7 @@ declare(strict_types=1);
 require (getenv('VETCARE_SERVER_ROOT') ?: __DIR__ . '/../server') . '/bootstrap.php';
 
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-if (in_array($path, ['/api/v1/auth/login','/api/v1/auth/session','/api/v1/auth/logout','/api/v1/admin/users','/api/v1/access','/api/v1/owners','/api/v1/patients','/api/v1/attention/validate','/api/v1/consultations','/api/v1/history','/api/v1/consultation-versions'], true)) {
+if (in_array($path, ['/api/v1/auth/login','/api/v1/auth/session','/api/v1/auth/logout','/api/v1/admin/users','/api/v1/access','/api/v1/owners','/api/v1/patients','/api/v1/attention/validate','/api/v1/consultations','/api/v1/history','/api/v1/consultation-versions','/api/v1/offline/bootstrap'], true)) {
     require (getenv('VETCARE_SERVER_ROOT') ?: __DIR__ . '/../server') . '/auth-routes.php';
     authRoute($path, $_SERVER['REQUEST_METHOD'] ?? 'GET');
 }

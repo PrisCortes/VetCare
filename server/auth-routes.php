@@ -7,6 +7,7 @@ require_once __DIR__.'/patients.php';
 require_once __DIR__.'/attention.php';
 require_once __DIR__.'/consultations.php';
 require_once __DIR__.'/history.php';
+require_once __DIR__.'/offline.php';
 
 function authBody(int $maxBytes=16384): array {
     if (strtolower(trim(explode(';',$_SERVER['CONTENT_TYPE'] ?? '')[0])) !== 'application/json') \VetCare\failAccess(415,'JSON_REQUIRED');
@@ -33,6 +34,7 @@ function authRoute(string $path, string $method): never {
         '/api/v1/consultations'=>['GET','POST','PATCH'],
         '/api/v1/history'=>['GET'],
         '/api/v1/consultation-versions'=>['GET'],
+        '/api/v1/offline/bootstrap'=>['POST'],
     ];
     if (!in_array($method,$routes[$path],true)) { header('Allow: '.implode(', ',$routes[$path])); respond(405,['error'=>['code'=>'METHOD_NOT_ALLOWED','message'=>'Método no permitido.']]); }
     try {
@@ -49,6 +51,7 @@ function authRoute(string $path, string $method): never {
         $db=\VetCare\centralDatabase();
         $session=\VetCare\authenticated($db,$token,$path!=='/api/v1/auth/session');
         if ($write) \VetCare\requireCsrf($session,$_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+        if($path==='/api/v1/offline/bootstrap')respond(200,\VetCare\offlineBootstrap($db,$session,authBody()));
         if($path==='/api/v1/history')respond(200,\VetCare\patientHistory($db,$session,$_GET));
         if($path==='/api/v1/consultation-versions')respond(200,\VetCare\consultationVersions($db,$session,$_GET));
         if($path==='/api/v1/consultations'){
@@ -109,6 +112,8 @@ function authRoute(string $path, string $method): never {
     } catch (\VetCare\AccessError $error) {
         if (isset($db) && $db->inTransaction()) $db->rollBack();
         $messages=[
+            'OFFLINE_KEY_REQUIRED'=>'Falta preparar la firma de acceso local en el backend.',
+            'OFFLINE_EXPORT_TOO_LARGE'=>'La preparación supera 2000 registros por entidad. No se descargará una copia incompleta.',
             'CONSULTATION_ONLY'=>'Solo está habilitado el guardado de consultas y tratamientos.',
             'INVALID_CONSULTATION_VERSION'=>'Versión de consulta no válida.',
             'CONSULTATION_NOT_FOUND'=>'No se encontró la consulta.',

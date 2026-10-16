@@ -1,17 +1,20 @@
 import {escapeHtml as e} from './view-state.js';
-let csrf = '', currentUser = null;
+import {initializeOfflineUi} from './offline-ui.js';
+let csrf = '', currentUser = null,offlineExpiryTimer;
 const directoryCache=new Map();
 let directoryGeneration=0;
 function clearDirectories(){directoryCache.clear();directoryGeneration++;}
 function initialDirectory(){const hash=globalThis.location?.hash??'';return hash==='#propietarios'?'owners':hash===''||hash==='#pacientes'?'patients':null;}
 export const authenticatedUser=()=>currentUser;
+export const isOffline=()=>!!currentUser?.offline;
+export const storageLabel=()=>isOffline()?'este equipo · pendiente de sincronización':'MariaDB';
 const actions = { login:['POST','/auth/login'], session:['GET','/auth/session'], logout:['POST','/auth/logout'], users:['GET','/admin/users'], createUser:['POST','/admin/users'], updateUser:['PATCH','/admin/users'], owners:['GET','/owners'],createOwner:['POST','/owners'],updateOwner:['PATCH','/owners'] };
 Object.assign(actions,{patients:['GET','/patients'],createPatient:['POST','/patients'],updatePatient:['PATCH','/patients'],validateAttention:['POST','/attention/validate']});
 Object.assign(actions,{consultations:['GET','/consultations'],createConsultation:['POST','/consultations'],updateConsultation:['PATCH','/consultations']});
 Object.assign(actions,{history:['GET','/history'],consultationVersions:['GET','/consultation-versions']});
 export async function request(action, data, {fresh=false}={}) {
   if (!Object.hasOwn(actions,action)) throw new Error('Acción no permitida.');
-  const cacheable=['owners','patients'].includes(action)&&!!currentUser;
+  const cacheable=['owners','patients'].includes(action)&&!!currentUser&&!currentUser.offline;
   const cacheKey=JSON.stringify([currentUser?.id,action,data??null]);
   const cached=directoryCache.get(cacheKey);
   if(cacheable&&!fresh&&cached&&Date.now()-cached.at<15000)return structuredClone(cached.data);
@@ -39,6 +42,7 @@ export async function request(action, data, {fresh=false}={}) {
   }
   if(!['owners','patients','session','users','validateAttention','consultations','history','consultationVersions'].includes(action))clearDirectories();
   if(cacheable&&generation===directoryGeneration&&identityAtStart===currentUser?.id){if(directoryCache.size>=50)directoryCache.delete(directoryCache.keys().next().value);directoryCache.set(cacheKey,{at:Date.now(),data:structuredClone(response.data)});}
+  if(response.data.local)window.dispatchEvent(new CustomEvent('vetcare:local-result',{detail:{pending:response.data.pending}}));
   return response.data;
 }
 export async function initializeAuth(onIdentityChange) {
@@ -46,16 +50,19 @@ export async function initializeAuth(onIdentityChange) {
   const userLabel=document.getElementById('session-user'), logout=document.getElementById('logout'), manage=document.getElementById('manage-users'), modal=document.getElementById('users-dialog');
   function identity(user,directory=null) {
     const previous=currentUser;currentUser=user;csrf=user?csrf:'';
-    if(previous?.id!==user?.id)clearDirectories();
+    clearTimeout(offlineExpiryTimer);if(user?.offline&&Number.isFinite(user.offlineRemainingMs))offlineExpiryTimer=setTimeout(()=>{window.vetcare?.offline?.('lock');identity(null);},Math.max(0,user.offlineRemainingMs));
+    if(previous?.id!==user?.id||!!previous?.offline!==!!user?.offline)clearDirectories();
     if(user&&directory&&['owners','patients'].includes(directory.action))directoryCache.set(JSON.stringify([user.id,directory.action,directory.query]),{at:Date.now(),data:structuredClone(directory.data)});
     document.body.classList.toggle('auth-locked',!user);gate.hidden=!!user;
     document.body.classList.remove('auth-pending');
     document.getElementById('auth-loading').hidden=true;
     userLabel.textContent=user ? `${user.name} · ${user.role==='administrador'?'Administrador':'Veterinario'}` : '';
-    manage.hidden=user?.role!=='administrador';logout.hidden=!user;
+    manage.hidden=user?.role!=='administrador'||!!user?.offline;logout.hidden=!user;
+    offlineUi.identity(user);
     if (!user && modal.open) modal.close();
-    if (previous?.id!==user?.id) onIdentityChange(user);
+    if (previous?.id!==user?.id||!!previous?.offline!==!!user?.offline)onIdentityChange(user);
   }
+  const offlineUi=initializeOfflineUi({onUnlock:user=>identity(user)});
   window.addEventListener('vetcare:unauthenticated',()=>identity(null));
   form.addEventListener('submit',async event=>{
     event.preventDefault();const button=form.querySelector('button');button.disabled=true;notice.textContent='Verificando acceso…';

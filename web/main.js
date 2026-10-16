@@ -1,7 +1,7 @@
 import {createViewState,escapeHtml as e} from './view-state.js';
 import {patientsView,patientRows,ownersView,detailView,carnetView,consultationView,formFields} from './views.js';
 import {initializeDiagnostics} from './diagnostics.js';
-import {initializeAuth,authenticatedUser} from './auth.js';
+import {initializeAuth,authenticatedUser,isOffline} from './auth.js';
 import {ownersPage,initializeOwners} from './owners.js';
 import {patientsPage,initializePatients} from './patients.js';
 import {attentionPage,initializeAttention} from './attention.js';
@@ -22,7 +22,7 @@ function render(){
  document.querySelector('.nav-count').hidden=!state.demo;
  const names={pacientes:'Pacientes',propietarios:'Propietarios',expediente:'Expediente',carnet:'Carnet sanitario',consulta:'Nueva consulta',entorno:'Estado del entorno'};
  document.getElementById('breadcrumb').textContent=names[currentRoute];document.title='VetCare · '+names[currentRoute];
- document.getElementById('mode-note').textContent=state.demo?'Demostración activa · Datos ficticios, sin guardado clínico.':['propietarios','pacientes'].includes(currentRoute)?'Directorio central · Guardado con conexión.':currentRoute==='expediente'?'Historial central de consultas y versiones.':'Atención central; carnet en preparación.';
+ document.getElementById('mode-note').textContent=isOffline()?'Sin conexión · Guardado local, pendiente de sincronización.':state.demo?'Demostración activa · Datos ficticios, sin guardado clínico.':['propietarios','pacientes'].includes(currentRoute)?'Directorio central · Guardado con conexión.':currentRoute==='expediente'?'Historial central de consultas y versiones.':'Atención central; carnet en preparación.';
  document.getElementById('clear-demo').hidden=!state.demo;
  if(currentRoute==='entorno'){main.innerHTML=document.getElementById('environment-template').innerHTML;initializeDiagnostics(document.getElementById('environment-panel')).catch(()=>notify('No se pudo completar el diagnóstico del entorno.'));}
  else if(currentRoute==='propietarios'&&!state.demo){main.innerHTML=ownersPage();initializeOwners(document.getElementById('owners-panel'),{onDirty:value=>{dirty=value;}});}

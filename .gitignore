@@ -13,4 +13,5 @@ storage/
 *.db-*
 coverage/
 *.pem
+!config/offline-public.pem
 *.key

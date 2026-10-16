@@ -1,0 +1,12 @@
+const {randomBytes,createCipheriv,createDecipheriv,verify,scryptSync,timingSafeEqual}=require('node:crypto');
+function encrypt(key,value,context){const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,iv);cipher.setAAD(Buffer.from(context));const data=Buffer.concat([cipher.update(JSON.stringify(value),'utf8'),cipher.final()]);return JSON.stringify({iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),data:data.toString('base64')});}
+function decrypt(key,envelope,context){const value=JSON.parse(envelope),decipher=createDecipheriv('aes-256-gcm',key,Buffer.from(value.iv,'base64'));decipher.setAAD(Buffer.from(context));decipher.setAuthTag(Buffer.from(value.tag,'base64'));return JSON.parse(Buffer.concat([decipher.update(Buffer.from(value.data,'base64')),decipher.final()]).toString('utf8'));}
+function passwordVerifier(password,salt=randomBytes(16).toString('hex')){if(typeof password!=='string'||Buffer.byteLength(password)<12||Buffer.byteLength(password)>128)throw new Error('La clave local debe tener entre 12 y 128 bytes.');return {salt,hash:scryptSync(password,salt,32).toString('hex')};}
+function verifyPassword(password,verifier){if(typeof password!=='string'||Buffer.byteLength(password)>128)return false;return timingSafeEqual(scryptSync(password,verifier.salt,32),Buffer.from(verifier.hash,'hex'));}
+function verifyLease(lease,publicKey,{issuer,deviceId,now=Date.now()/1000}){
+ if(!lease||typeof lease.payload!=='string'||lease.payload.length>8192||typeof lease.signature!=='string'||!verify('RSA-SHA256',Buffer.from(lease.payload),publicKey,Buffer.from(lease.signature,'base64url')))throw new Error('Autorización local no válida.');
+ const claim=JSON.parse(Buffer.from(lease.payload,'base64url').toString('utf8'));
+ if(claim.schema!==1||claim.issuer!==issuer||claim.deviceId!==deviceId||!claim.user?.active||!/^[a-f0-9]{32}$/.test(claim.user.id)||!['administrador','veterinario'].includes(claim.user.role)||!Number.isInteger(claim.issuedAt)||!Number.isInteger(claim.expiresAt)||claim.expiresAt-claim.issuedAt>72*3600||claim.expiresAt<=claim.issuedAt||claim.issuedAt>now+120||claim.expiresAt<=now||!['clinical.read','clinical.write'].every(permission=>claim.permissions?.includes(permission)))throw new Error('El acceso local venció o no corresponde a este equipo. Renueva con conexión.');
+ return claim;
+}
+module.exports={encrypt,decrypt,passwordVerifier,verifyPassword,verifyLease};
