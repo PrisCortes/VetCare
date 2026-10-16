@@ -53,6 +53,7 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Vacunas y desparasitaciones - T27](docs/implementacion/T27_vacunas_desparasitaciones.md)
 - [Consulta conectada desde móviles - T28](docs/implementacion/T28_consulta_movil.md)
 - [Expediente y carnet sanitario integrados - T29](docs/implementacion/T29_expediente_carnet.md)
+- [Preparación de pruebas con y sin internet - T30](docs/implementacion/T30_pruebas_con_sin_internet.md)
 - [Pendientes de conexión - T32](docs/implementacion/T32_pendientes_conexion.md)
 - [Envío y actualización de pendientes - T34](docs/implementacion/T34_envio_actualizacion.md)
 
@@ -65,6 +66,8 @@ T27 habilita el guardado central de vacunaciones y desparasitaciones, sus correc
 T28 adapta la consulta conectada a anchos de teléfono: conserva el paciente seleccionado, presenta una sola columna de captura y acciones táctiles amplias. Requiere conexión y un navegador moderno; no es una aplicación nativa ni integra todavía el carnet al expediente (T29).
 
 T29 reúne en el expediente las consultas y antecedentes sanitarios del paciente, y habilita el carnet conectado con vacunas y desparasitaciones registradas. La captura sanitaria offline, la recepción de cambios de otros equipos y la conciliación de conflictos siguen fuera de esta entrega.
+
+T30 prepara datos ficticios, escenarios controlados y un registro de evidencia para pruebas conectadas y sin conexión. No ejecuta por sí sola el cambio de red, la preparación de un equipo Windows ni la sincronización; esos resultados se anotan al realizar los recorridos.
 
 T32 añade estados, orden, intentos y recuperación para la cola local offline. Todavía no envía operaciones al servidor; ese intercambio corresponde a T34.
 
