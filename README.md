@@ -49,8 +49,11 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Guardado de consultas y tratamientos - T23](docs/implementacion/T23_consultas_tratamientos.md)
 - [Expediente, antecedentes y versiones - T24](docs/implementacion/T24_historial_clinico.md)
 - [Captura local sin internet - T25](docs/implementacion/T25_registro_sin_internet.md)
+- [Pruebas de funciones básicas - T26](docs/implementacion/T26_pruebas_funciones_basicas.md)
 
-T25 integra preparación de cuenta y captura offline en Electron, registros cifrados por cuenta, autorización de 72 horas y cola local pendiente. Requiere `offline:keys` y preparación previa con conexión. La prueba nativa de Windows y el recorrido real siguen pendientes; el envío automático no está implementado todavía.
+T25 integra preparación de cuenta y captura offline en Electron, registros cifrados por cuenta, autorización de 72 horas y cola local pendiente. Su cierre fue confirmado por el usuario. Requiere `offline:keys` y preparación previa con conexión; el envío automático no está implementado todavía.
+
+T26 reúne las pruebas automatizadas del núcleo y las comprobaciones de T23/T24 contra MariaDB TLS mediante tablas temporales. Las vacunas, desparasitaciones, sincronización, recorridos visuales y pruebas de compatibilidad siguen pendientes.
 
 T24 incorpora Ver expediente desde pacientes, consultas por fecha, filtros, último peso con origen y versiones de solo lectura. Utiliza las tablas de T23; no añade migraciones. El historial sanitario completo y la persistencia offline siguen pendientes.
 
