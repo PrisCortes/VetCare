@@ -50,14 +50,17 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Expediente, antecedentes y versiones - T24](docs/implementacion/T24_historial_clinico.md)
 - [Captura local sin internet - T25](docs/implementacion/T25_registro_sin_internet.md)
 - [Pruebas de funciones básicas - T26](docs/implementacion/T26_pruebas_funciones_basicas.md)
+- [Vacunas y desparasitaciones - T27](docs/implementacion/T27_vacunas_desparasitaciones.md)
 
 T25 integra preparación de cuenta y captura offline en Electron, registros cifrados por cuenta, autorización de 72 horas y cola local pendiente. Su cierre fue confirmado por el usuario. Requiere `offline:keys` y preparación previa con conexión; el envío automático no está implementado todavía.
 
-T26 reúne las pruebas automatizadas del núcleo y las comprobaciones de T23/T24 contra MariaDB TLS mediante tablas temporales. Las vacunas, desparasitaciones, sincronización, recorridos visuales y pruebas de compatibilidad siguen pendientes.
+T26 reúne las pruebas automatizadas del núcleo y las comprobaciones de T23/T24 contra MariaDB TLS mediante tablas temporales. La sincronización, los recorridos visuales y las pruebas de compatibilidad siguen pendientes.
+
+T27 habilita el guardado central de vacunaciones y desparasitaciones, sus correcciones y versiones. El historial/carnet conectado y el envío offline de estos eventos siguen pendientes.
 
 T24 incorpora Ver expediente desde pacientes, consultas por fecha, filtros, último peso con origen y versiones de solo lectura. Utiliza las tablas de T23; no añade migraciones. El historial sanitario completo y la persistencia offline siguen pendientes.
 
-T23 habilita Guardar consulta y Guardar corrección en el formulario conectado, con recuperación de registros y versiones. Aplicar `004_consultations` con `npm run db:migrate`. Revisar captura sigue siendo una operación sin guardado; los eventos sanitarios todavía no se persisten.
+T23 habilita Guardar consulta y Guardar corrección en el formulario conectado, con recuperación de registros y versiones. Aplicar `004_consultations` con `npm run db:migrate`. Revisar captura sigue siendo una operación sin guardado; los eventos sanitarios se guardan por separado desde T27.
 
 T22 permite preparar y validar una atención desde un paciente central. La vista previa indica explícitamente que no se ha guardado. La persistencia de consultas corresponde a T23; T22 no requiere una nueva migración.
 

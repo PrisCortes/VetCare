@@ -6,6 +6,7 @@ require_once __DIR__.'/owners.php';
 require_once __DIR__.'/patients.php';
 require_once __DIR__.'/attention.php';
 require_once __DIR__.'/consultations.php';
+require_once __DIR__.'/sanitary-events.php';
 require_once __DIR__.'/history.php';
 require_once __DIR__.'/offline.php';
 
@@ -32,6 +33,7 @@ function authRoute(string $path, string $method): never {
         '/api/v1/patients'=>['GET','POST','PATCH'],
         '/api/v1/attention/validate'=>['POST'],
         '/api/v1/consultations'=>['GET','POST','PATCH'],
+        '/api/v1/sanitary-events'=>['GET','POST','PATCH'],
         '/api/v1/history'=>['GET'],
         '/api/v1/consultation-versions'=>['GET'],
         '/api/v1/offline/bootstrap'=>['POST'],
@@ -59,6 +61,16 @@ function authRoute(string $path, string $method): never {
             $input=authBody(524288);$operation=\VetCare\requireUuid($input['operationId']??null);$lockName='vc_consult_'.$operation;
             $q=$db->prepare('SELECT GET_LOCK(?,5)');$q->execute([$lockName]);if((int)$q->fetchColumn()!==1)\VetCare\failAccess(503,'TRY_AGAIN');
             try{$db->beginTransaction();$session=\VetCare\authenticated($db,$token,false);$result=\VetCare\saveConsultation($db,$session,$input,$method==='POST');if($result['saved'])$db->commit();else $db->rollBack();}
+            catch(Throwable $error){if($db->inTransaction())$db->rollBack();throw $error;}
+            finally{$q=$db->prepare('SELECT RELEASE_LOCK(?)');$q->execute([$lockName]);}
+            if(!$result['saved'])respond(422,['error'=>['code'=>'INVALID_ATTENTION','message'=>'Revisa los campos indicados.'],'fields'=>$result['fields']]);
+            respond($method==='POST'?201:200,$result);
+        }
+        if($path==='/api/v1/sanitary-events'){
+            if($method==='GET')respond(200,\VetCare\listSanitaryEvents($db,$session,$_GET));
+            $input=authBody(524288);$operation=\VetCare\requireUuid($input['operationId']??null);$lockName='vc_sanitary_'.$operation;
+            $q=$db->prepare('SELECT GET_LOCK(?,5)');$q->execute([$lockName]);if((int)$q->fetchColumn()!==1)\VetCare\failAccess(503,'TRY_AGAIN');
+            try{$db->beginTransaction();$session=\VetCare\authenticated($db,$token,false);$result=\VetCare\saveSanitaryEvent($db,$session,$input,$method==='POST');if($result['saved'])$db->commit();else $db->rollBack();}
             catch(Throwable $error){if($db->inTransaction())$db->rollBack();throw $error;}
             finally{$q=$db->prepare('SELECT RELEASE_LOCK(?)');$q->execute([$lockName]);}
             if(!$result['saved'])respond(422,['error'=>['code'=>'INVALID_ATTENTION','message'=>'Revisa los campos indicados.'],'fields'=>$result['fields']]);
@@ -119,6 +131,11 @@ function authRoute(string $path, string $method): never {
             'CONSULTATION_NOT_FOUND'=>'No se encontró la consulta.',
             'CONSULTATION_PATIENT_IMMUTABLE'=>'Una corrección no puede cambiar el paciente de la consulta.',
             'CONSULTATION_CONFLICT'=>'Otra sesión corrigió esta consulta. Recarga sus registros antes de continuar.',
+            'SANITARY_EVENT_ONLY'=>'Solo se pueden guardar vacunas o desparasitaciones en esta ruta.',
+            'INVALID_SANITARY_EVENT_VERSION'=>'Versión de evento sanitario no válida.',
+            'SANITARY_EVENT_NOT_FOUND'=>'No se encontró el evento sanitario.',
+            'SANITARY_EVENT_PATIENT_IMMUTABLE'=>'Una corrección no puede cambiar el paciente del evento sanitario.',
+            'SANITARY_EVENT_CONFLICT'=>'Otra sesión corrigió este evento. Recarga sus registros antes de continuar.',
             'PATIENT_INACTIVE'=>'Reactiva al paciente antes de preparar una nueva atención.',
             'PATIENT_CONTEXT_CHANGED'=>'La ficha del paciente cambió. Vuelve al directorio y selecciona su versión reciente; no se guardó la captura.',
             'INVALID_PATIENT'=>'Revisa la identificación, especie y campos del paciente.',
