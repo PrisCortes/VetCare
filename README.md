@@ -51,6 +51,7 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Captura local sin internet - T25](docs/implementacion/T25_registro_sin_internet.md)
 - [Pruebas de funciones básicas - T26](docs/implementacion/T26_pruebas_funciones_basicas.md)
 - [Vacunas y desparasitaciones - T27](docs/implementacion/T27_vacunas_desparasitaciones.md)
+- [Consulta conectada desde móviles - T28](docs/implementacion/T28_consulta_movil.md)
 - [Pendientes de conexión - T32](docs/implementacion/T32_pendientes_conexion.md)
 - [Envío y actualización de pendientes - T34](docs/implementacion/T34_envio_actualizacion.md)
 
@@ -59,6 +60,8 @@ T25 integra preparación de cuenta y captura offline en Electron, registros cifr
 T26 reúne las pruebas automatizadas del núcleo y las comprobaciones de T23/T24 contra MariaDB TLS mediante tablas temporales. La sincronización, los recorridos visuales y las pruebas de compatibilidad siguen pendientes.
 
 T27 habilita el guardado central de vacunaciones y desparasitaciones, sus correcciones y versiones. El historial/carnet conectado y el envío offline de estos eventos siguen pendientes.
+
+T28 adapta la consulta conectada a anchos de teléfono: conserva el paciente seleccionado, presenta una sola columna de captura y acciones táctiles amplias. Requiere conexión y un navegador moderno; no es una aplicación nativa ni integra todavía el carnet al expediente (T29).
 
 T32 añade estados, orden, intentos y recuperación para la cola local offline. Todavía no envía operaciones al servidor; ese intercambio corresponde a T34.
 

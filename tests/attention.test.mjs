@@ -20,7 +20,7 @@ test('reglas equivalentes en PHP y JavaScript para los cuatro formularios',()=>{
 test('vacunas no generan próxima fecha ni diagnóstico y el contexto no se toma del texto de pantalla',()=>{
  const result=validateAttention({kind:'vacuna',date:'2026-01-01',product:'Prueba'},{today:'2026-11-18'});assert.equal(result.valid,true);assert.equal(result.data.nextDate,null);assert.equal(result.data.reason,undefined);
  assert.match(attentionPage(null),/Selecciona un paciente/);
- const html=attentionPage({id:base.patientId,name:'<script>bad()</script>',species:'Perro',ownerName:'A & B',version:1});assert.ok(!html.includes('<script>bad()'));assert.match(html,/&lt;script&gt;/);assert.match(html,/Guardar consulta/);assert.match(attentionFormFields('consulta'),/latidos\/min/);
+ const html=attentionPage({id:base.patientId,name:'<script>bad()</script>',species:'Perro',ownerName:'A & B',version:1});assert.ok(!html.includes('<script>bad()'));assert.match(html,/&lt;script&gt;/);assert.match(html,/attention-capture-context/);assert.match(html,/data-mobile-capture/);assert.match(html,/aria-label="Acciones de la atención"/);assert.match(html,/Guardar consulta/);assert.match(attentionFormFields('consulta'),/latidos\/min/);
 });
 test('fecha realizada limitada a hoy y próxima aplicación futura permitida',()=>{
  const html=attentionFormFields('vacuna');const next=html.match(/<input id="attention-nextDate"[^>]*>/)[0];assert.ok(!next.includes('max='));assert.match(html,/<input id="attention-date"[^>]*max=/);
