@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import {root,phpCommand} from '../scripts/environment.mjs';
-import {historyPage,historyCard,historicalAge} from '../web/history.js';
+import {historyPage,historyCard,sanitaryHistoryCard,historicalAge} from '../web/history.js';
 const php=phpCommand();
 test('historial: valida intervalo, calendario, búsqueda y cursor antes de consultar SQL',()=>{
  const code=`require 'server/auth.php';require 'server/owners.php';require 'server/history.php';echo json_encode(\\VetCare\\historyFilters(['q'=>' Tratamiento ','from'=>'2024-02-29','to'=>'2026-12-01']));foreach([['from'=>'2025-02-29'],['from'=>'2026-01-02','to'=>'2026-01-01'],['cursor'=>'bad'],['q'=>[]],['cursor'=>str_repeat('a',257)]]as$case){try{\\VetCare\\historyFilters($case);echo 'X';}catch(\\VetCare\\AccessError$e){echo$e->status;}}`;
@@ -17,4 +17,5 @@ test('cursor del historial conserva fecha e identificador sin depender de la zon
 });
 test('historial escapa texto clínico, autores y contexto y evita abrir sin paciente',()=>{
  const html=historyCard({id:'test',version:2,date:'2026-01-01',reason:'<script>bad()</script>',treatment:'A & B',notes:null,weight:null,temperature:null,heartRate:null,respiratoryRate:null,createdByName:'<img src=x>',updatedByName:'Doctor',ageSnapshot:{ageValue:null}});assert.ok(!html.includes('<script>'));assert.match(html,/&lt;img/);assert.match(html,/Ver versiones/);assert.match(html,/Corregir consulta/);assert.match(historyPage(null),/Selecciona un paciente/);
+ const sanitary=sanitaryHistoryCard({kind:'vacuna',version:1,date:'2026-01-02',product:'<script>bad()</script>',application:'Refuerzo',nextDate:null,createdByName:'Doctor',updatedByName:'Doctor'});assert.ok(!sanitary.includes('<script>'));assert.match(sanitary,/Vacunación/);assert.match(sanitary,/Sin fecha programada/);
 });

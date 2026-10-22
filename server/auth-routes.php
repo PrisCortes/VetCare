@@ -37,6 +37,7 @@ function authRoute(string $path, string $method): never {
         '/api/v1/sanitary-events'=>['GET','POST','PATCH'],
         '/api/v1/sync/push'=>['POST'],
         '/api/v1/history'=>['GET'],
+        '/api/v1/carnet'=>['GET'],
         '/api/v1/consultation-versions'=>['GET'],
         '/api/v1/offline/bootstrap'=>['POST'],
     ];
@@ -57,6 +58,7 @@ function authRoute(string $path, string $method): never {
         if ($write) \VetCare\requireCsrf($session,$_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
         if($path==='/api/v1/offline/bootstrap')respond(200,\VetCare\offlineBootstrap($db,$session,authBody()));
         if($path==='/api/v1/history')respond(200,\VetCare\patientHistory($db,$session,$_GET));
+        if($path==='/api/v1/carnet')respond(200,\VetCare\patientCarnet($db,$session,$_GET));
         if($path==='/api/v1/consultation-versions')respond(200,\VetCare\consultationVersions($db,$session,$_GET));
         if($path==='/api/v1/consultations'){
             if($method==='GET')respond(200,\VetCare\listConsultations($db,$session,$_GET));

@@ -20,9 +20,22 @@ function historyFilters(array $query):array{
  }
  return ['q'=>trim($search),'from'=>$from,'to'=>$to,'before'=>$before];
 }
+function historyPatient(PDO $db,string $id):array{
+ $q=$db->prepare('SELECT p.*,o.name AS owner_name FROM vc_patients p JOIN vc_owners o ON o.id=p.owner_id WHERE p.id=?');$q->execute([$id]);$patient=$q->fetch();if(!$patient)failAccess(404,'PATIENT_NOT_FOUND');return$patient;
+}
+function sanitaryTotals(PDO $db,string $patient):array{
+ $q=$db->prepare('SELECT (SELECT COUNT(*) FROM vc_vaccinations WHERE patient_id=?) AS vaccinations,(SELECT COUNT(*) FROM vc_dewormings WHERE patient_id=?) AS dewormings');$q->execute([$patient,$patient]);$row=$q->fetch();return ['vaccinations'=>(int)$row['vaccinations'],'dewormings'=>(int)$row['dewormings']];
+}
+function sanitaryTimeline(PDO $db,string $patient,int $limit=100):array{
+ $limit=max(1,min($limit,100));$q=$db->prepare("SELECT * FROM (SELECT v.id,v.patient_id,'vacuna' AS kind,v.date,v.product,v.application,NULL AS weight_g,v.next_date,v.version,v.created_by,v.updated_by,v.created_at,v.updated_at,a.name AS created_name,u.name AS updated_name FROM vc_vaccinations v JOIN vc_auth_users a ON a.id=v.created_by JOIN vc_auth_users u ON u.id=v.updated_by WHERE v.patient_id=? UNION ALL SELECT d.id,d.patient_id,'desparasitacion' AS kind,d.date,d.product,NULL AS application,d.weight_g,d.next_date,d.version,d.created_by,d.updated_by,d.created_at,d.updated_at,a.name AS created_name,u.name AS updated_name FROM vc_dewormings d JOIN vc_auth_users a ON a.id=d.created_by JOIN vc_auth_users u ON u.id=d.updated_by WHERE d.patient_id=?) events ORDER BY date DESC,id DESC LIMIT ".($limit+1));$q->execute([$patient,$patient]);$rows=$q->fetchAll();$more=count($rows)>$limit;$rows=array_slice($rows,0,$limit);
+ return ['events'=>array_map(static fn($row)=>[...publicSanitaryEvent($row,$row['kind']),'createdByName'=>$row['created_name'],'updatedByName'=>$row['updated_name']],$rows),'hasMore'=>$more];
+}
+function patientCarnet(PDO $db,array $actor,array $query):array{
+ requirePermission($actor,'clinical.read');$id=requireUuid($query['patientId']??null);$patient=historyPatient($db,$id);$timeline=sanitaryTimeline($db,$id);return ['patient'=>publicPatient($patient),'events'=>$timeline['events'],'hasMoreEvents'=>$timeline['hasMore'],'totals'=>sanitaryTotals($db,$id)];
+}
 function patientHistory(PDO $db,array $actor,array $query):array{
  requirePermission($actor,'clinical.read');$id=requireUuid($query['patientId']??null);$filter=historyFilters($query);
- $q=$db->prepare('SELECT p.*,o.name AS owner_name FROM vc_patients p JOIN vc_owners o ON o.id=p.owner_id WHERE p.id=?');$q->execute([$id]);$patient=$q->fetch();if(!$patient)failAccess(404,'PATIENT_NOT_FOUND');
+ $patient=historyPatient($db,$id);
  $where=['c.patient_id=?'];$args=[$id];
  if($filter['from']){$where[]='c.date>=?';$args[]=$filter['from'];}if($filter['to']){$where[]='c.date<=?';$args[]=$filter['to'];}
  if($filter['q']!==''){$where[]="(c.reason LIKE ? ESCAPE '!' OR c.treatment LIKE ? ESCAPE '!' OR c.notes LIKE ? ESCAPE '!')";$term='%'.str_replace(['!','%','_'],['!!','!%','!_'],$filter['q']).'%';array_push($args,$term,$term,$term);}
@@ -31,7 +44,8 @@ function patientHistory(PDO $db,array $actor,array $query):array{
  $cursor=$more&&$last?rtrim(strtr(base64_encode(json_encode(['date'=>$last['date'],'id'=>$last['id']],JSON_THROW_ON_ERROR)),'+/','-_'),'='):null;
  $q=$db->prepare('SELECT COUNT(*) FROM vc_consultations WHERE patient_id=?');$q->execute([$id]);$total=(int)$q->fetchColumn();
  $q=$db->prepare('SELECT id,date,weight_g FROM vc_consultations WHERE patient_id=? AND weight_g IS NOT NULL ORDER BY date DESC,id DESC LIMIT 1');$q->execute([$id]);$weight=$q->fetch();
- return ['patient'=>publicPatient($patient),'consultations'=>array_map(static fn($row)=>[...publicConsultation($row),'createdByName'=>$row['created_name'],'updatedByName'=>$row['updated_name']],$rows),'nextCursor'=>$cursor,'totalConsultations'=>$total,'latestConsultationWeight'=>$weight?['consultationId'=>$weight['id'],'date'=>$weight['date'],'grams'=>(int)$weight['weight_g']]:null];
+ $sanitary=sanitaryTimeline($db,$id,50);
+ return ['patient'=>publicPatient($patient),'consultations'=>array_map(static fn($row)=>[...publicConsultation($row),'createdByName'=>$row['created_name'],'updatedByName'=>$row['updated_name']],$rows),'nextCursor'=>$cursor,'totalConsultations'=>$total,'latestConsultationWeight'=>$weight?['consultationId'=>$weight['id'],'date'=>$weight['date'],'grams'=>(int)$weight['weight_g']]:null,'sanitaryEvents'=>$sanitary['events'],'hasMoreSanitaryEvents'=>$sanitary['hasMore'],'sanitaryTotals'=>sanitaryTotals($db,$id)];
 }
 function consultationVersions(PDO $db,array $actor,array $query):array{
  requirePermission($actor,'clinical.read');$patient=requireUuid($query['patientId']??null);$id=requireUuid($query['consultationId']??null);$before=$query['before']??'';

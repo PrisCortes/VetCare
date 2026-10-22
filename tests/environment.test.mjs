@@ -10,7 +10,7 @@ test('web y PHP locales: salud, errores y aislamiento de archivos', async () => 
   const services = await startServices({ webPort, apiPort });
   try {
     const page = await fetch(services.url); assert.equal(page.status, 200); assert.match(await page.text(), /VetCare/);
-    for (const asset of ['history.js','attention-controller.js','attention.js','attention-validation.js','attention.css','patients.js','owners.js','offline-ui.js','auth.js','auth.css','main.js','view-state.js','views.js','diagnostics.js','styles.css','mobile.css','application.css']) assert.equal((await fetch(services.url + '/' + asset)).status, 200, asset);
+    for (const asset of ['history.js','carnet.js','attention-controller.js','attention.js','attention-validation.js','attention.css','patients.js','owners.js','offline-ui.js','auth.js','auth.css','main.js','view-state.js','views.js','diagnostics.js','styles.css','mobile.css','application.css']) assert.equal((await fetch(services.url + '/' + asset)).status, 200, asset);
     const health = await fetch(services.url + '/api/v1/health'); assert.equal(health.status, 200); assert.deepEqual(await health.json(), { service: 'vetcare-api', status: 'ok', database: 'not_checked' });
     const anonymous=await fetch(services.url+'/api/v1/auth/session');assert.equal(anonymous.status,401);
     const anonymousOwners=await fetch(services.url+'/api/v1/owners');assert.equal(anonymousOwners.status,401);
@@ -18,7 +18,7 @@ test('web y PHP locales: salud, errores y aislamiento de archivos', async () => 
     const anonymousConsultations=await fetch(services.url+'/api/v1/consultations?patientId=11111111-1111-4111-8111-111111111111');assert.equal(anonymousConsultations.status,401);
     const anonymousSanitary=await fetch(services.url+'/api/v1/sanitary-events?patientId=11111111-1111-4111-8111-111111111111&kind=vacuna');assert.equal(anonymousSanitary.status,401);
     const anonymousSync=await fetch(services.url+'/api/v1/sync/push',{method:'POST',headers:{Origin:process.env.APP_ORIGIN||services.url,'Content-Type':'application/json'},body:'{}'});assert.equal(anonymousSync.status,401);
-    for(const path of ['/api/v1/history','/api/v1/consultation-versions']){assert.equal((await fetch(services.url+path)).status,401);assert.equal((await fetch(services.url+path,{method:'DELETE'})).status,405);}
+    for(const path of ['/api/v1/history','/api/v1/carnet','/api/v1/consultation-versions']){assert.equal((await fetch(services.url+path)).status,401);assert.equal((await fetch(services.url+path,{method:'DELETE'})).status,405);}
     const deleteConsultation=await fetch(services.url+'/api/v1/consultations',{method:'DELETE'});assert.equal(deleteConsultation.status,405);
     const deleteSanitary=await fetch(services.url+'/api/v1/sanitary-events',{method:'DELETE'});assert.equal(deleteSanitary.status,405);
     const deleteSync=await fetch(services.url+'/api/v1/sync/push',{method:'DELETE'});assert.equal(deleteSync.status,405);

@@ -13,7 +13,7 @@
     "dev:desktop": "node scripts/desktop.mjs",
     "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
-    "test": "node --test tests/api.test.mjs tests/storage.test.mjs tests/views.test.mjs tests/central-database.test.mjs tests/auth.test.mjs tests/owners.test.mjs tests/patients.test.mjs tests/startup.test.mjs tests/attention.test.mjs tests/consultations.test.mjs tests/sanitary-events.test.mjs tests/history.test.mjs tests/offline.test.mjs",
+    "test": "node --test tests/api.test.mjs tests/storage.test.mjs tests/views.test.mjs tests/central-database.test.mjs tests/auth.test.mjs tests/owners.test.mjs tests/patients.test.mjs tests/startup.test.mjs tests/attention.test.mjs tests/consultations.test.mjs tests/sanitary-events.test.mjs tests/history.test.mjs tests/carnet.test.mjs tests/offline.test.mjs",
     "test:offline": "node --test tests/offline.test.mjs",
     "test:offline:windows": "node scripts/test-offline-windows.mjs",
     "test:history:database": "node scripts/test-history-database.mjs",
