@@ -72,7 +72,7 @@ T30 prepara datos ficticios, escenarios controlados y un registro de evidencia p
 
 T31 reúne la primera evidencia de sincronización existente: simulador de Electron y MariaDB temporal comprueban operación durable, orden, UUID, reintento idempotente y rechazo bloqueado. El recorrido manual de reconexión queda pendiente y no altera la implementación de T34.
 
-T32 añade estados, orden, intentos y recuperación para la cola local offline. Todavía no envía operaciones al servidor; ese intercambio corresponde a T34.
+T32 añade estados, orden, intentos y recuperación para la cola local offline. T34 consume esa cola para enviar propietarios, pacientes y consultas, y solo la reduce después de una confirmación central durable.
 
 T34 sincroniza propietarios, pacientes y consultas pendientes al iniciar sesión con conexión o mediante acción manual. La recepción de cambios de otros equipos y la conciliación de conflictos siguen pendientes.
 
