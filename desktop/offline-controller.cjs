@@ -7,8 +7,8 @@ function createOfflineController({directory,origin,remote,safeStorage,trustedPub
  const getVault=async()=>{
   if(!vaultPromise)vaultPromise=(async()=>{
    const publicKey=trustedPublicKey??await readFile(join(__dirname,'..','config','offline-public.pem'),'utf8');
-   vault=await createOfflineVault({directory,issuer:origin,publicKey,protector:{available:()=>safeStorage.isAsyncEncryptionAvailable(),encrypt:text=>safeStorage.encryptStringAsync(text),decrypt:data=>safeStorage.decryptStringAsync(data)}});return vault;
-  })().catch(()=>{vaultPromise=null;throw new Error('No se pudo abrir el acceso local. Ejecuta npm run offline:keys y comprueba la protección de claves de Windows.');});
+   vault=await createOfflineVault({directory,issuer:origin,publicKey,protector:{available:()=>safeStorage.isAsyncEncryptionAvailable(),encrypt:text=>safeStorage.encryptStringAsync(text),decrypt:async data=>{const value=await safeStorage.decryptStringAsync(data);return typeof value==='string'?value:value.result;}}});return vault;
+  })().catch(error=>{vaultPromise=null;const detail=error instanceof Error&&error.message?': '+error.message:'';throw new Error('No se pudo abrir el acceso local'+detail);});
   return vaultPromise;
  };
  const errorResponse=(error,status=422)=>({status:error.status??status,data:{error:{code:'OFFLINE_ERROR',message:error.message},fields:error.fields??{}}});
@@ -17,7 +17,8 @@ function createOfflineController({directory,origin,remote,safeStorage,trustedPub
    try{
     const local=await getVault();
     if(action==='profiles')return {ok:true,profiles:local.profiles()};
-    if(action==='status'){if(mode!=='offline')return {ok:true,offline:false};const context=await local.access(false);return {ok:true,offline:true,pending:context.store.pendingCount()};}
+    if(action==='status'){if(mode!=='offline')return {ok:true,offline:false};const context=await local.access(false),queue=context.store.pendingSummary();return {ok:true,offline:true,pending:queue.total,queue};}
+    if(action==='pending'){if(mode!=='offline')throw new Error('Desbloquea tu cuenta local para consultar pendientes.');const context=await local.access(false);return {ok:true,queue:context.store.pendingSummary(),entries:context.store.pendingEntries()};}
     if(action==='activity'){if(mode==='offline')await local.access(true);return {ok:true};}
     if(action==='prepare'){
      if(mode!=='online')throw new Error('Inicia sesión con conexión para preparar o renovar este equipo.');
@@ -39,8 +40,8 @@ function createOfflineController({directory,origin,remote,safeStorage,trustedPub
    let context;
    try{context=await vault.access(action!=='session');}catch(error){vault?.lock();return errorResponse(error,401);}
    try{
-    if(action==='session')return {status:200,data:{user:context.user,local:true,pending:context.store.pendingCount()}};
-    const result=await offlineAction(context.store,context.user,action,data??{},{nowMs:context.now});return {status:200,data:{...result,pending:context.store.pendingCount()}};
+    if(action==='session'){const queue=context.store.pendingSummary();return {status:200,data:{user:context.user,local:true,pending:queue.total,queue}};}
+    const result=await offlineAction(context.store,context.user,action,data??{} ,{nowMs:context.now}),queue=context.store.pendingSummary();return {status:200,data:{...result,pending:queue.total,queue}};
    }catch(error){return errorResponse(error);}
   },
   close(){vault?.close();}
