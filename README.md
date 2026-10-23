@@ -56,6 +56,7 @@ El despliegue y la conexión segura Vercel–MariaDB están pendientes de valida
 - [Preparación de pruebas con y sin internet - T30](docs/implementacion/T30_pruebas_con_sin_internet.md)
 - [Primeras pruebas de sincronización - T31](docs/implementacion/T31_pruebas_sincronizacion.md)
 - [Pendientes de conexión - T32](docs/implementacion/T32_pendientes_conexion.md)
+- [Evaluación del intercambio inicial M05a - T33](docs/implementacion/T33_evaluacion_intercambio.md)
 - [Envío y actualización de pendientes - T34](docs/implementacion/T34_envio_actualizacion.md)
 
 T25 integra preparación de cuenta y captura offline en Electron, registros cifrados por cuenta, autorización de 72 horas y cola local pendiente. Su cierre fue confirmado por el usuario. Requiere `offline:keys` y preparación previa con conexión; T34 agrega el envío de propietarios, pacientes y consultas.
@@ -73,6 +74,8 @@ T30 prepara datos ficticios, escenarios controlados y un registro de evidencia p
 T31 reúne la primera evidencia de sincronización existente: simulador de Electron y MariaDB temporal comprueban operación durable, orden, UUID, reintento idempotente y rechazo bloqueado. El recorrido manual de reconexión queda pendiente y no altera la implementación de T34.
 
 T32 añade estados, orden, intentos y recuperación para la cola local offline. T34 consume esa cola para enviar propietarios, pacientes y consultas, y solo la reduce después de una confirmación central durable.
+
+T33 evalúa el intercambio inicial con conexión TLS y tablas temporales: no detecta un bloqueo técnico automatizado, pero conserva como pendiente el recorrido de reconexión real en Electron y no declara aprobada una sincronización completa.
 
 T34 sincroniza propietarios, pacientes y consultas pendientes al iniciar sesión con conexión o mediante acción manual. La recepción de cambios de otros equipos y la conciliación de conflictos siguen pendientes.
 
