@@ -44,7 +44,7 @@ export async function request(action, data, {fresh=false}={}) {
   }
   if(!['owners','patients','session','users','validateAttention','consultations','sanitaryEvents','history','carnet','consultationVersions'].includes(action))clearDirectories();
   if(cacheable&&generation===directoryGeneration&&identityAtStart===currentUser?.id){if(directoryCache.size>=50)directoryCache.delete(directoryCache.keys().next().value);directoryCache.set(cacheKey,{at:Date.now(),data:structuredClone(response.data)});}
-  if(response.data.local)window.dispatchEvent(new CustomEvent('vetcare:local-result',{detail:{pending:response.data.pending,queue:response.data.queue}}));
+  if(response.data.local)window.dispatchEvent(new CustomEvent('vetcare:local-result',{detail:{pending:response.data.pending,queue:response.data.queue,recovery:response.data.recovery}}));
   return response.data;
 }
 export async function initializeAuth(onIdentityChange) {

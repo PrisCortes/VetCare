@@ -5,10 +5,13 @@ function verifiedHttpsUrl(value) {
   return url.origin;
 }
 function applicationRuntime(environment) {
-  if (environment.VETCARE_APP_URL) return { source: verifiedHttpsUrl(environment.VETCARE_APP_URL), mode: 'central' };
   const source = environment.VETCARE_DEV_URL;
-  if (!source || !/^http:\/\/127\.0\.0\.1:\d+$/.test(source)) throw new Error('Inicia desarrollo mediante npm run dev:desktop o configura VETCARE_APP_URL para la aplicación central.');
-  return { source, mode: 'development' };
+  if (source) {
+    if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(source)) throw new Error('VETCARE_DEV_URL debe ser un origen local de desarrollo válido.');
+    return { source, mode: 'development' };
+  }
+  if (environment.VETCARE_APP_URL) return { source: verifiedHttpsUrl(environment.VETCARE_APP_URL), mode: 'central' };
+  throw new Error('Inicia desarrollo mediante npm run dev:desktop o configura VETCARE_APP_URL para la aplicación central.');
 }
 function desktopEnvironment(environment) {
   return Object.fromEntries(Object.entries(environment).filter(([key]) => !key.startsWith('DB_') && key !== 'OFFLINE_PRIVATE_KEY'));

@@ -33,6 +33,15 @@ test('SQLite: propietarios, pacientes y consulta persisten con cola atómica e i
  store.close();for(const file of readdirSync(dir))assert.ok(!readFileSync(join(dir,file)).includes(Buffer.from('PERSONA_PRIVADA_T25')));
  store=openOfflineStore(dir,Buffer.from(originalKey),user.id);assert.equal(store.get('owners',owner.id).phone,'00123');assert.equal(store.get('consultations',consultation.id).reason,'Revisión local');assert.equal(store.pendingCount(),3);assert.equal(store.seed({owners:[],patients:[],consultations:[]}),false);store.close();assert.throws(()=>openOfflineStore(dir,randomBytes(32),'b'.repeat(32)));
 });
+test('T36: cada consulta offline conserva snapshot cifrado y copia independiente verificable',async t=>{
+ const dir=fixture(t),key=randomBytes(32),store=openOfflineStore(dir,Buffer.from(key),user.id);
+ const owner=(await offlineAction(store,user,'createOwner',{operationId:randomUUID(),name:'Propietario snapshot'})).owner;
+ const patient=(await offlineAction(store,user,'createPatient',{operationId:randomUUID(),ownerId:owner.id,name:'Paciente snapshot',species:'Perro'})).patient;
+ const saved=await offlineAction(store,user,'createConsultation',{operationId:randomUUID(),kind:'consulta',patientId:patient.id,patientVersion:1,date:'2026-01-01',reason:'Motivo recuperable'});
+ assert.equal(saved.snapshot.state,'logical_confirmed');assert.equal(store.snapshots().length,1);assert.deepEqual(store.materializeSnapshots(),{verified:1,pending:0,total:1});
+ const snapshot=store.snapshots()[0],file=join(dir,'snapshots',snapshot.id+'.snapshot');assert.equal(snapshot.state,'copy_verified');assert.ok(!readFileSync(file).includes(Buffer.from('Motivo recuperable')));assert.deepEqual(store.verifySnapshots(),{verified:1,invalid:0,total:1});
+ writeFileSync(file,'contenido alterado');assert.deepEqual(store.verifySnapshots(),{verified:0,invalid:1,total:1});assert.equal(store.snapshots()[0].state,'copy_pending');assert.deepEqual(store.materializeSnapshots(),{verified:1,pending:0,total:1});assert.equal(store.snapshots()[0].state,'copy_verified');store.close();
+});
 test('bóveda: desbloqueo tras reinicio, aislamiento, inactividad y vencimiento sin borrar pendientes',async t=>{
  const dir=fixture(t),osKey=randomBytes(32);let now=Date.now();
  // Protector simulado para prueba portable; no acredita DPAPI real.

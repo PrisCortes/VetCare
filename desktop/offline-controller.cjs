@@ -31,7 +31,7 @@ function createOfflineController({directory,origin,remote,safeStorage,trustedPub
    try{
     const local=await getVault();
     if(action==='profiles')return {ok:true,profiles:local.profiles()};
-    if(action==='status'){if(mode!=='offline')return {ok:true,offline:false};const context=await local.access(false),queue=context.store.pendingSummary();return {ok:true,offline:true,pending:queue.total,queue};}
+    if(action==='status'){if(mode!=='offline')return {ok:true,offline:false};const context=await local.access(false),queue=context.store.pendingSummary();return {ok:true,offline:true,pending:queue.total,queue,snapshots:context.store.snapshotSummary()};}
     if(action==='pending'){if(mode!=='offline')throw new Error('Desbloquea tu cuenta local para consultar pendientes.');const context=await local.access(false);return {ok:true,queue:context.store.pendingSummary(),entries:context.store.pendingEntries()};}
     if(action==='activity'){if(mode==='offline')await local.access(true);return {ok:true};}
     if(action==='prepare'){
@@ -55,8 +55,8 @@ function createOfflineController({directory,origin,remote,safeStorage,trustedPub
    let context;
    try{context=await vault.access(action!=='session');}catch(error){vault?.lock();return errorResponse(error,401);}
    try{
-    if(action==='session'){const queue=context.store.pendingSummary();return {status:200,data:{user:context.user,local:true,pending:queue.total,queue}};}
-    const result=await offlineAction(context.store,context.user,action,data??{} ,{nowMs:context.now}),queue=context.store.pendingSummary();return {status:200,data:{...result,pending:queue.total,queue}};
+   if(action==='session'){const queue=context.store.pendingSummary();return {status:200,data:{user:context.user,local:true,pending:queue.total,queue}};}
+    const result=await offlineAction(context.store,context.user,action,data??{} ,{nowMs:context.now});const recovery=result.snapshot?context.store.materializeSnapshots():null,queue=context.store.pendingSummary();return {status:200,data:{...result,recovery,pending:queue.total,queue}};
    }catch(error){return errorResponse(error);}
   },
   close(){vault?.close();}

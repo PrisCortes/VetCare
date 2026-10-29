@@ -8,7 +8,7 @@ T1-T14 documentados; T15 prepara web/PHP/Electron, T16 incorpora SQLite técnico
 
 El trabajo incluye desarrollar el sistema completo: web, API PHP, MariaDB central, Electron para Windows, SQLite local, sincronización, pruebas e instalador. Las tareas T8–T14 preparan el diseño; la implementación comienza con T15, siguiendo las asignaciones y ventanas del cronograma.
 
-La aplicación distribuida no se conecta a MariaDB ni contiene `DB_*`: se abre contra el origen HTTPS publicado con `VETCARE_APP_URL` mediante `npm run desktop:central`. `npm run dev:desktop` conserva PHP local exclusivamente para desarrollo. Las credenciales de MariaDB pertenecen solo al entorno secreto del servicio central. T35 conserva ambas ramas de una actualización offline concurrente y aplica un orden LWW controlado por el servidor; la descarga incremental entre equipos sigue pendiente.
+La aplicación distribuida no se conecta a MariaDB ni contiene `DB_*`: se abre contra el origen HTTPS publicado con `VETCARE_APP_URL` mediante `npm run desktop:central`. `npm run dev:desktop` conserva PHP local exclusivamente para desarrollo. Las credenciales de MariaDB pertenecen solo al entorno secreto del servicio central. T35 conserva ambas ramas de una actualización offline concurrente y aplica un orden LWW controlado por el servidor; T36 genera snapshots locales cifrados por consulta y copias verificables. La descarga incremental entre equipos y la restauración clínica siguen pendientes.
 
 El desarrollo se entrega una tarea por vez cuando las dependencias lo permiten. Las fechas de referencia son las del cronograma documental; el historial de Git queda a cargo del usuario.
 
