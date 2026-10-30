@@ -40,11 +40,11 @@ function listOwners(PDO $db,array $actor,array $query): array {
     return ['owners'=>array_map('VetCare\\publicOwner',array_slice($rows,0,50)),'page'=>(int)$page,'hasMore'=>$more];
 }
 /** El llamador abre transacción y revalida la sesión antes de mutar. */
-function saveOwner(PDO $db,array $actor,array $data,bool $create): array {
+function saveOwner(PDO $db,array $actor,array $data,bool $create,?string $offlineId=null): array {
     requirePermission($actor,'clinical.write');
     $operation=requireUuid($data['operationId']??null);
     $fields=ownerFields($data);
-    $id=$create?null:requireUuid($data['id']??null);
+    $id=$create?($offlineId===null?null:requireUuid($offlineId)):requireUuid($data['id']??null);
     $active=$data['active']??true;$version=$data['version']??null;
     if(!is_bool($active)||(!$create&&(!is_int($version)||$version<1)))failAccess(422,'INVALID_OWNER');
     $fingerprint=hash('sha256',json_encode([$create,$id,$fields,$active,$version],JSON_THROW_ON_ERROR));
@@ -55,7 +55,7 @@ function saveOwner(PDO $db,array $actor,array $data,bool $create): array {
     }
     $now=time();
     if($create){
-        $id=uuid();$version=1;$active=true;
+        $id??=uuid();$version=1;$active=true;
         $db->prepare('INSERT INTO vc_owners(id,name,phone,address,locality,active,version,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)')->execute([$id,...array_values($fields),1,$version,$actor['id'],$actor['id'],$now,$now]);
     }else{
         $q=$db->prepare('SELECT * FROM vc_owners WHERE id=? FOR UPDATE');$q->execute([$id]);$previous=$q->fetch();

@@ -19,6 +19,7 @@
     "test:history:database": "node scripts/test-history-database.mjs",
     "test:consultations:database": "node scripts/test-consultations-database.mjs",
     "test:sanitary:database": "node scripts/test-sanitary-events-database.mjs",
+    "test:sync:database": "node scripts/test-sync-database.mjs",
     "test:attention:database": "node scripts/test-attention-database.mjs",
     "test:owners:database": "node scripts/test-owners-database.mjs",
     "test:patients:database": "node scripts/test-patients-database.mjs",

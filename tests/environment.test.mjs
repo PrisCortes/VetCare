@@ -17,9 +17,11 @@ test('web y PHP locales: salud, errores y aislamiento de archivos', async () => 
     const anonymousOffline=await fetch(services.url+'/api/v1/offline/bootstrap',{method:'POST',headers:{Origin:process.env.APP_ORIGIN||services.url,'Content-Type':'application/json'},body:'{}'});assert.equal(anonymousOffline.status,401);
     const anonymousConsultations=await fetch(services.url+'/api/v1/consultations?patientId=11111111-1111-4111-8111-111111111111');assert.equal(anonymousConsultations.status,401);
     const anonymousSanitary=await fetch(services.url+'/api/v1/sanitary-events?patientId=11111111-1111-4111-8111-111111111111&kind=vacuna');assert.equal(anonymousSanitary.status,401);
+    const anonymousSync=await fetch(services.url+'/api/v1/sync/push',{method:'POST',headers:{Origin:process.env.APP_ORIGIN||services.url,'Content-Type':'application/json'},body:'{}'});assert.equal(anonymousSync.status,401);
     for(const path of ['/api/v1/history','/api/v1/consultation-versions']){assert.equal((await fetch(services.url+path)).status,401);assert.equal((await fetch(services.url+path,{method:'DELETE'})).status,405);}
     const deleteConsultation=await fetch(services.url+'/api/v1/consultations',{method:'DELETE'});assert.equal(deleteConsultation.status,405);
     const deleteSanitary=await fetch(services.url+'/api/v1/sanitary-events',{method:'DELETE'});assert.equal(deleteSanitary.status,405);
+    const deleteSync=await fetch(services.url+'/api/v1/sync/push',{method:'DELETE'});assert.equal(deleteSync.status,405);
     const anonymousAttention=await fetch(services.url+'/api/v1/attention/validate',{method:'POST',headers:{Origin:process.env.APP_ORIGIN||services.url,'Content-Type':'application/json'},body:'{}'});assert.equal(anonymousAttention.status,401);
     const wrongAttentionMethod=await fetch(services.url+'/api/v1/attention/validate');assert.equal(wrongAttentionMethod.status,405);
     const wrongAttentionOrigin=await fetch(services.url+'/api/v1/attention/validate',{method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:'{}'});assert.equal(wrongAttentionOrigin.status,403);

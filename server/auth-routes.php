@@ -7,6 +7,7 @@ require_once __DIR__.'/patients.php';
 require_once __DIR__.'/attention.php';
 require_once __DIR__.'/consultations.php';
 require_once __DIR__.'/sanitary-events.php';
+require_once __DIR__.'/sync.php';
 require_once __DIR__.'/history.php';
 require_once __DIR__.'/offline.php';
 
@@ -34,6 +35,7 @@ function authRoute(string $path, string $method): never {
         '/api/v1/attention/validate'=>['POST'],
         '/api/v1/consultations'=>['GET','POST','PATCH'],
         '/api/v1/sanitary-events'=>['GET','POST','PATCH'],
+        '/api/v1/sync/push'=>['POST'],
         '/api/v1/history'=>['GET'],
         '/api/v1/consultation-versions'=>['GET'],
         '/api/v1/offline/bootstrap'=>['POST'],
@@ -76,6 +78,7 @@ function authRoute(string $path, string $method): never {
             if(!$result['saved'])respond(422,['error'=>['code'=>'INVALID_ATTENTION','message'=>'Revisa los campos indicados.'],'fields'=>$result['fields']]);
             respond($method==='POST'?201:200,$result);
         }
+        if($path==='/api/v1/sync/push')respond(200,\VetCare\syncPush($db,$session,authBody(524288)));
         if($path==='/api/v1/attention/validate'){
             $result=\VetCare\validatePatientAttention($db,$session,authBody(524288));
             if(!$result['valid'])respond(422,['error'=>['code'=>'INVALID_ATTENTION','message'=>'Revisa los campos indicados.'],'fields'=>$result['errors']]);
@@ -136,6 +139,8 @@ function authRoute(string $path, string $method): never {
             'SANITARY_EVENT_NOT_FOUND'=>'No se encontró el evento sanitario.',
             'SANITARY_EVENT_PATIENT_IMMUTABLE'=>'Una corrección no puede cambiar el paciente del evento sanitario.',
             'SANITARY_EVENT_CONFLICT'=>'Otra sesión corrigió este evento. Recarga sus registros antes de continuar.',
+            'INVALID_SYNC_BATCH'=>'El lote de sincronización no es válido.',
+            'INVALID_SYNC_OPERATION'=>'La operación local no es válida para sincronización.',
             'PATIENT_INACTIVE'=>'Reactiva al paciente antes de preparar una nueva atención.',
             'PATIENT_CONTEXT_CHANGED'=>'La ficha del paciente cambió. Vuelve al directorio y selecciona su versión reciente; no se guardó la captura.',
             'INVALID_PATIENT'=>'Revisa la identificación, especie y campos del paciente.',

@@ -41,9 +41,9 @@ function listPatients(PDO $db,array $actor,array $query):array {
     $q=$db->prepare('SELECT p.*,o.name AS owner_name FROM vc_patients p JOIN vc_owners o ON o.id=p.owner_id'.$filter.' ORDER BY p.name,p.id LIMIT 51 OFFSET '.$offset);$q->execute($args);$rows=$q->fetchAll();
     return ['patients'=>array_map('VetCare\\publicPatient',array_slice($rows,0,50)),'page'=>(int)$page,'hasMore'=>count($rows)>50];
 }
-function savePatient(PDO $db,array $actor,array $data,bool $create):array {
+function savePatient(PDO $db,array $actor,array $data,bool $create,?string $offlineId=null):array {
     requirePermission($actor,'clinical.write');$operation=requireUuid($data['operationId']??null);$fields=patientFields($data);
-    $id=$create?null:requireUuid($data['id']??null);$active=$data['active']??true;$version=$data['version']??null;
+    $id=$create?($offlineId===null?null:requireUuid($offlineId)):requireUuid($data['id']??null);$active=$data['active']??true;$version=$data['version']??null;
     if(!is_bool($active)||(!$create&&(!is_int($version)||$version<1)))failAccess(422,'INVALID_PATIENT');
     $fingerprint=hash('sha256',json_encode([$create,$id,$fields,$active,$version],JSON_THROW_ON_ERROR));
     $q=$db->prepare('SELECT actor_id,payload_hash,result FROM vc_patient_operations WHERE operation_id=?');$q->execute([$operation]);$prior=$q->fetch();
@@ -56,7 +56,7 @@ function savePatient(PDO $db,array $actor,array $data,bool $create):array {
     if(!$create){$q=$db->prepare('SELECT * FROM vc_patients WHERE id=? FOR UPDATE');$q->execute([$id]);$current=$q->fetch();if(!$current||(int)$current['version']!==$version)failAccess(409,'PATIENT_CONFLICT');}
     if(($create||$active)&&!(bool)$owner['active'])failAccess(409,'PATIENT_OWNER_INACTIVE');
     $now=time();
-    if($create){$id=uuid();$version=1;$active=true;$db->prepare('INSERT INTO vc_patients(id,owner_id,name,species,breed,birth_date,age_value,age_unit,age_reference,active,version,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute([$id,...array_values($fields),1,1,$actor['id'],$actor['id'],$now,$now]);}
+    if($create){$id??=uuid();$version=1;$active=true;$db->prepare('INSERT INTO vc_patients(id,owner_id,name,species,breed,birth_date,age_value,age_unit,age_reference,active,version,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute([$id,...array_values($fields),1,1,$actor['id'],$actor['id'],$now,$now]);}
     else{$version++;$db->prepare('UPDATE vc_patients SET owner_id=?,name=?,species=?,breed=?,birth_date=?,age_value=?,age_unit=?,age_reference=?,active=?,version=?,updated_by=?,updated_at=? WHERE id=?')->execute([...array_values($fields),(int)$active,$version,$actor['id'],$now,$id]);}
     $result=['id'=>$id,...$fields,'ownerName'=>$owner['name'],'active'=>$active,'version'=>$version,'updatedAt'=>$now];$json=json_encode($result,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
     $db->prepare('INSERT INTO vc_patient_versions(patient_id,version,actor_id,snapshot,created_at) VALUES(?,?,?,?,?)')->execute([$id,$version,$actor['id'],$json,$now]);

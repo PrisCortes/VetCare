@@ -20,10 +20,10 @@ function listConsultations(PDO $db,array $actor,array $query):array{
  return ['consultations'=>array_map('VetCare\\publicConsultation',array_slice($rows,0,20)),'page'=>(int)$page,'hasMore'=>count($rows)>20];
 }
 /** Transacción y bloqueo de operationId pertenecen al llamador. */
-function saveConsultation(PDO $db,array $actor,array $input,bool $create):array{
+function saveConsultation(PDO $db,array $actor,array $input,bool $create,?string $offlineId=null):array{
  requirePermission($actor,'clinical.write');$identity=consultationIdentity($input,$create);
  $operation=$identity['operationId'];$patientId=$identity['patientId'];
- $payload=[];foreach(['kind','patientId','patientVersion','id','version','date','reason','treatment','notes','weight','temperature','heartRate','respiratoryRate']as$key)$payload[$key]=$input[$key]??null;
+ $payload=['offlineId'=>$offlineId];foreach(['kind','patientId','patientVersion','id','version','date','reason','treatment','notes','weight','temperature','heartRate','respiratoryRate']as$key)$payload[$key]=$input[$key]??null;
  $hash=hash('sha256',json_encode([$create,$payload],JSON_THROW_ON_ERROR));
  $q=$db->prepare('SELECT * FROM vc_consultation_operations WHERE operation_id=?');$q->execute([$operation]);$previous=$q->fetch();
  if($previous){if($previous['actor_id']!==$actor['id']||!hash_equals($previous['payload_hash'],$hash))failAccess(409,'OPERATION_REUSED');return json_decode($previous['result'],true,16,JSON_THROW_ON_ERROR);}
@@ -35,7 +35,7 @@ function saveConsultation(PDO $db,array $actor,array $input,bool $create):array{
  $age=$old?json_decode($old['age_snapshot'],true,8,JSON_THROW_ON_ERROR):['birthDate'=>$patient['birth_date'],'ageValue'=>$patient['age_value']===null?null:(int)$patient['age_value'],'ageUnit'=>$patient['age_unit'],'ageReference'=>$patient['age_reference'],'patientVersion'=>(int)$patient['version']];
  $validation=attentionFields($input,$age['birthDate']);
  if(!$validation['valid'])return ['saved'=>false,'fields'=>$validation['errors']];
- $data=$validation['data'];$now=time();$id=$create?uuid():$identity['id'];$version=$create?1:(int)$old['version']+1;$ageJson=json_encode($age,JSON_THROW_ON_ERROR);
+ $data=$validation['data'];$now=time();$id=$create?($offlineId===null?uuid():requireUuid($offlineId)):$identity['id'];$version=$create?1:(int)$old['version']+1;$ageJson=json_encode($age,JSON_THROW_ON_ERROR);
  $values=[$data['date'],$data['reason'],$data['treatment'],$data['notes'],$data['weight'],$data['temperature'],$data['heartRate'],$data['respiratoryRate']];
  if($create)$db->prepare('INSERT INTO vc_consultations(id,patient_id,date,reason,treatment,notes,weight_g,temperature_cent,heart_rate,respiratory_rate,age_snapshot,version,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute([$id,$patientId,...$values,$ageJson,$version,$actor['id'],$actor['id'],$now,$now]);
  else $db->prepare('UPDATE vc_consultations SET date=?,reason=?,treatment=?,notes=?,weight_g=?,temperature_cent=?,heart_rate=?,respiratory_rate=?,version=?,updated_by=?,updated_at=? WHERE id=?')->execute([...$values,$version,$actor['id'],$now,$id]);

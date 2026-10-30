@@ -32,6 +32,7 @@ async function createOfflineVault({directory,publicKey,issuer,protector,clock=Da
    profile.failures=0;profile.lockedUntil=0;await persist();
    const accountPath=join(directory,createHash('sha256').update(issuer+':'+id).digest('hex'));store=openOfflineStore(accountPath,Buffer.from(profile.key,'base64'),id);current=claim.user;lastActivity=clock();return {...current,offline:true,offlineRemainingMs:claim.expiresAt*1000-(clock()+profile.offset)};
   },
+  openForSync(id){const profile=state.profiles[id];if(!profile)throw new Error('No hay una copia local preparada para esta cuenta.');const accountPath=join(directory,createHash('sha256').update(issuer+':'+id).digest('hex'));return openOfflineStore(accountPath,Buffer.from(profile.key,'base64'),id);},
   async access(touch=true){if(!current||!store)throw new Error('Desbloquea tu cuenta local.');await observe();let claim;try{claim=lease(state.profiles[current.id]);if(clock()-lastActivity>=15*60000)throw new Error('La sesión local se bloqueó por inactividad.');}catch(error){lock();throw error;}if(touch)lastActivity=clock();return {user:{...current,offline:true,offlineRemainingMs:claim.expiresAt*1000-(clock()+state.profiles[current.id].offset)},store,now:clock()+state.profiles[current.id].offset};},
   lock,
   close(){lock();vaultDb.close();},

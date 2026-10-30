@@ -70,7 +70,7 @@ export async function initializeAuth(onIdentityChange) {
     try {
       const data=new FormData(form);
       const result=await request('login',{username:data.get('username'),password:data.get('password'),directory:initialDirectory()});
-      form.reset();identity(result.user,result.directory);notice.textContent='';
+      form.reset();identity(result.user,result.directory);notice.textContent=result.sync?.applied?`Se sincronizaron ${result.sync.applied} operaciones pendientes.`:'';
     } catch(error) { notice.textContent=error.message;form.elements.password.value=''; }
     finally { button.disabled=false; }
   });
