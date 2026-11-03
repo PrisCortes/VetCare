@@ -40,7 +40,7 @@ function listOwners(PDO $db,array $actor,array $query): array {
     return ['owners'=>array_map('VetCare\\publicOwner',array_slice($rows,0,50)),'page'=>(int)$page,'hasMore'=>$more];
 }
 /** El llamador abre transacción y revalida la sesión antes de mutar. */
-function saveOwner(PDO $db,array $actor,array $data,bool $create,?string $offlineId=null): array {
+function saveOwner(PDO $db,array $actor,array $data,bool $create,?string $offlineId=null,bool $reconcile=false): array {
     requirePermission($actor,'clinical.write');
     $operation=requireUuid($data['operationId']??null);
     $fields=ownerFields($data);
@@ -54,13 +54,14 @@ function saveOwner(PDO $db,array $actor,array $data,bool $create,?string $offlin
         return json_decode($previous['result'],true,16,JSON_THROW_ON_ERROR);
     }
     $now=time();
+    $conflict=null;$displaced=null;
     if($create){
         $id??=uuid();$version=1;$active=true;
         $db->prepare('INSERT INTO vc_owners(id,name,phone,address,locality,active,version,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)')->execute([$id,...array_values($fields),1,$version,$actor['id'],$actor['id'],$now,$now]);
     }else{
         $q=$db->prepare('SELECT * FROM vc_owners WHERE id=? FOR UPDATE');$q->execute([$id]);$previous=$q->fetch();
         if(!$previous)failAccess(404,'OWNER_NOT_FOUND');
-        if((int)$previous['version']!==$version)failAccess(409,'OWNER_CONFLICT');
+        if((int)$previous['version']!==$version){if(!$reconcile)failAccess(409,'OWNER_CONFLICT');$displaced=publicOwner($previous);$conflict=['base'=>(int)$version,'displaced'=>(int)$previous['version']];$version=(int)$previous['version'];}
         if(!$active){
             $q=$db->prepare('SELECT id FROM vc_patients WHERE owner_id=? AND active=1 LIMIT 1 FOR UPDATE');$q->execute([$id]);if($q->fetch())failAccess(409,'OWNER_HAS_ACTIVE_PATIENTS');
         }
@@ -69,6 +70,7 @@ function saveOwner(PDO $db,array $actor,array $data,bool $create,?string $offlin
     }
     $result=['id'=>$id,...$fields,'active'=>$active,'version'=>$version,'updatedAt'=>$now];$encoded=json_encode($result,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
     $db->prepare('INSERT INTO vc_owner_versions(owner_id,version,actor_id,snapshot,created_at) VALUES(?,?,?,?,?)')->execute([$id,$version,$actor['id'],$encoded,$now]);
+    if($conflict)$result['conflict']=recordSyncConflict($db,'owner',$id,$operation,$actor,$conflict['base'],$conflict['displaced'],$version,$displaced,$result);
     $db->prepare('INSERT INTO vc_owner_operations(operation_id,actor_id,payload_hash,result,created_at) VALUES(?,?,?,?,?)')->execute([$operation,$actor['id'],$fingerprint,$encoded,$now]);
     audit($db,$actor['id'],$create?'owner_created':'owner_updated');
     return $result;

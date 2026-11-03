@@ -3,10 +3,12 @@ const path = require('node:path');
 const { openLocalStore } = require('./storage.cjs');
 const { createAuthClient } = require('./auth.cjs');
 const { createOfflineController } = require('./offline-controller.cjs');
+const { applicationRuntime } = require('./runtime.cjs');
 let window, storage, offline;
 app.whenReady().then(async () => {
-  const source = process.env.VETCARE_DEV_URL;
-  if (!source || !/^http:\/\/127\.0\.0\.1:\d+$/.test(source)) { console.error('Inicia el entorno mediante npm run dev:desktop.'); app.quit(); return; }
+  let runtime;
+  try { runtime = applicationRuntime(process.env); } catch (error) { console.error(error.message); app.quit(); return; }
+  const source = runtime.source;
   const origin = new URL(source).origin;
   try { storage = openLocalStore(path.join(app.getPath('userData'), 'storage', 'development', 'preauth-probe')); }
   catch (error) { console.error('No se pudo inicializar SQLite:', error.message); dialog.showErrorBox('VetCare · Almacenamiento', 'No se pudo abrir el almacenamiento local. No se borrará ni reemplazará la base existente. Revisa la terminal.'); app.quit(); return; }
@@ -23,7 +25,7 @@ app.whenReady().then(async () => {
   let work=Promise.resolve();const serial=fn=>{const result=work.then(fn);work=result.catch(()=>{});return result;};
   ipcMain.handle('vetcare:auth', (event, action, data) => { authorize(event); return serial(()=>offline.route(action, data)); });
   ipcMain.handle('vetcare:offline', (event, action, data) => { authorize(event); return serial(()=>offline.command(action,data)); });
-  ipcMain.handle('vetcare:environment', event => { authorize(event); return { client: 'desktop', platform: process.platform, stage: 'T17', persistence: true }; });
+  ipcMain.handle('vetcare:environment', event => { authorize(event); return { client: 'desktop', platform: process.platform, stage: 'T35', persistence: true, central: runtime.mode === 'central' }; });
   const storageAction = (event, action) => {
     authorize(event);
     try { return { ok: true, data: action() }; }

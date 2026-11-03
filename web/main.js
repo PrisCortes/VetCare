@@ -1,7 +1,7 @@
 import {createViewState,escapeHtml as e} from './view-state.js';
 import {patientsView,patientRows,ownersView,detailView,carnetView,consultationView,formFields} from './views.js';
 import {initializeDiagnostics} from './diagnostics.js';
-import {initializeAuth,authenticatedUser,isOffline} from './auth.js';
+import {initializeAuth,authenticatedUser,invalidateDirectoryCache,isOffline} from './auth.js';
 import {ownersPage,initializeOwners} from './owners.js';
 import {patientsPage,initializePatients} from './patients.js';
 import {attentionPage,initializeAttention} from './attention.js';
@@ -74,4 +74,5 @@ document.addEventListener('submit',event=>{
 dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog();});
 window.addEventListener('hashchange',()=>{if(route()===currentRoute)return;if(!leaveDraft()){history.replaceState(null,'','#'+currentRoute);return;}render();});
 window.addEventListener('beforeunload',event=>{if(dirty||dialogDirty){event.preventDefault();event.returnValue='';}});
+window.addEventListener('vetcare:synchronized',event=>{const applied=Number(event.detail?.applied??0);if(!applied||!authenticatedUser()||isOffline())return;invalidateDirectoryCache();if(dirty||dialogDirty){notify(`Se sincronizaron ${applied} operaciones. Guarda o descarta tu captura para actualizar esta vista.`);return;}render();notify(`Se sincronizaron ${applied} operaciones y se actualizó esta vista.`);});
 await initializeAuth(()=>{attentionPatient=null;attentionCorrection=null;state.clearDemo();query='';species='Todas';dirty=false;dialogDirty=false;if(dialog.open)dialog.close();render();});

@@ -17,7 +17,7 @@ test('recarga con sesión: mantiene oculto el login hasta autenticar; directorio
   return {status:200,json:async()=>url.includes('/auth/session')?{user:{id:'test',role:'administrador',name:'Prueba'},csrf:'csrf',directory:{action:'patients',query:{q:'',species:'',status:'active',page:'1'},data:{patients:[]}}}:{owners:[],ok:true}};
  };
  try{
-  const {initializeAuth,request}=await import('../web/auth.js?startup-test');let identityChanges=0;
+  const {initializeAuth,invalidateDirectoryCache,request}=await import('../web/auth.js?startup-test');let identityChanges=0;
   const ready=initializeAuth(()=>identityChanges++);
   assert.equal(node('login-gate').hidden,true);assert.deepEqual(assignments,[]);
   resolveSession();await ready;
@@ -28,6 +28,8 @@ test('recarga con sesión: mantiene oculto el login hasta autenticar; directorio
   await request('owners',{page:'1'},{fresh:true});assert.equal(calls.filter(([url])=>url.includes('/owners')).length,2);
   await request('createOwner',{name:'Prueba'});await request('owners',{page:'1'});
   assert.equal(calls.filter(([url,opts])=>url.includes('/owners')&&opts.method==='GET').length,3);
+  invalidateDirectoryCache();await request('owners',{page:'1'});
+  assert.equal(calls.filter(([url,opts])=>url.includes('/owners')&&opts.method==='GET').length,4);
   window.dispatchEvent(new Event('vetcare:unauthenticated'));assert.equal(node('login-gate').hidden,false);
  }finally{globalThis.window=previous.window;globalThis.document=previous.document;globalThis.fetch=previous.fetch;globalThis.setInterval=previous.interval;}
 });

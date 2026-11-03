@@ -11,9 +11,9 @@ function syncOperation(PDO $db,array $actor,array $operation):array{
  if(!isset($map[$action])||(!$create&&!$update))failAccess(422,'INVALID_SYNC_OPERATION');[$type,$create]=$map[$action];
  if(!$create&&($input['id']??null)!==$entityId)failAccess(422,'INVALID_SYNC_OPERATION');
  $result=match($type){
-  'owner'=>saveOwner($db,$actor,$input,$create,$create?$entityId:null),
-  'patient'=>savePatient($db,$actor,$input,$create,$create?$entityId:null),
-  'consultation'=>saveConsultation($db,$actor,$input,$create,$create?$entityId:null),
+  'owner'=>saveOwner($db,$actor,$input,$create,$create?$entityId:null,!$create),
+  'patient'=>savePatient($db,$actor,$input,$create,$create?$entityId:null,!$create),
+  'consultation'=>saveConsultation($db,$actor,$input,$create,$create?$entityId:null,!$create),
  };
  if($type==='consultation'){
   if($result['saved']!==true)failAccess(422,'INVALID_ATTENTION');$entity=$result['consultation'];

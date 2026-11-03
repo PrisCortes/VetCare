@@ -20,7 +20,7 @@ function listConsultations(PDO $db,array $actor,array $query):array{
  return ['consultations'=>array_map('VetCare\\publicConsultation',array_slice($rows,0,20)),'page'=>(int)$page,'hasMore'=>count($rows)>20];
 }
 /** Transacción y bloqueo de operationId pertenecen al llamador. */
-function saveConsultation(PDO $db,array $actor,array $input,bool $create,?string $offlineId=null):array{
+function saveConsultation(PDO $db,array $actor,array $input,bool $create,?string $offlineId=null,bool $reconcile=false):array{
  requirePermission($actor,'clinical.write');$identity=consultationIdentity($input,$create);
  $operation=$identity['operationId'];$patientId=$identity['patientId'];
  $payload=['offlineId'=>$offlineId];foreach(['kind','patientId','patientVersion','id','version','date','reason','treatment','notes','weight','temperature','heartRate','respiratoryRate']as$key)$payload[$key]=$input[$key]??null;
@@ -30,8 +30,17 @@ function saveConsultation(PDO $db,array $actor,array $input,bool $create,?string
  $q=$db->prepare('SELECT * FROM vc_patients WHERE id=? FOR UPDATE');$q->execute([$patientId]);$patient=$q->fetch();if(!$patient)failAccess(404,'PATIENT_NOT_FOUND');
  if((int)$patient['version']!==$input['patientVersion'])failAccess(409,'PATIENT_CONTEXT_CHANGED');
  if($create&&!(bool)$patient['active'])failAccess(409,'PATIENT_INACTIVE');
- $old=null;
- if(!$create){$q=$db->prepare('SELECT * FROM vc_consultations WHERE id=? FOR UPDATE');$q->execute([$identity['id']]);$old=$q->fetch();if(!$old)failAccess(404,'CONSULTATION_NOT_FOUND');if($old['patient_id']!==$patientId)failAccess(409,'CONSULTATION_PATIENT_IMMUTABLE');if((int)$old['version']!==$input['version'])failAccess(409,'CONSULTATION_CONFLICT');}
+ $old=null;$conflict=null;$displaced=null;
+ if(!$create){
+  $q=$db->prepare('SELECT * FROM vc_consultations WHERE id=? FOR UPDATE');$q->execute([$identity['id']]);$old=$q->fetch();
+  if(!$old)failAccess(404,'CONSULTATION_NOT_FOUND');
+  if($old['patient_id']!==$patientId)failAccess(409,'CONSULTATION_PATIENT_IMMUTABLE');
+  if((int)$old['version']!==$input['version']){
+   if(!$reconcile)failAccess(409,'CONSULTATION_CONFLICT');
+   $displaced=publicConsultation($old);
+   $conflict=['base'=>(int)$input['version'],'displaced'=>(int)$old['version']];
+  }
+ }
  $age=$old?json_decode($old['age_snapshot'],true,8,JSON_THROW_ON_ERROR):['birthDate'=>$patient['birth_date'],'ageValue'=>$patient['age_value']===null?null:(int)$patient['age_value'],'ageUnit'=>$patient['age_unit'],'ageReference'=>$patient['age_reference'],'patientVersion'=>(int)$patient['version']];
  $validation=attentionFields($input,$age['birthDate']);
  if(!$validation['valid'])return ['saved'=>false,'fields'=>$validation['errors']];
@@ -42,6 +51,7 @@ function saveConsultation(PDO $db,array $actor,array $input,bool $create,?string
  $result=['id'=>$id,'patientId'=>$patientId,...$data,'ageSnapshot'=>$age,'version'=>$version,'createdBy'=>$old['created_by']??$actor['id'],'updatedBy'=>$actor['id'],'createdAt'=>$old?(int)$old['created_at']:$now,'updatedAt'=>$now];
  $json=json_encode($result,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
  $db->prepare('INSERT INTO vc_consultation_versions(consultation_id,version,actor_id,snapshot,created_at) VALUES(?,?,?,?,?)')->execute([$id,$version,$actor['id'],$json,$now]);
+ if($conflict)$result['conflict']=recordSyncConflict($db,'consultation',$id,$operation,$actor,$conflict['base'],$conflict['displaced'],$version,$displaced,$result);
  $response=['saved'=>true,'consultation'=>$result];
  $db->prepare('INSERT INTO vc_consultation_operations(operation_id,actor_id,payload_hash,result,created_at) VALUES(?,?,?,?,?)')->execute([$operation,$actor['id'],$hash,json_encode($response,JSON_THROW_ON_ERROR),$now]);
  audit($db,$actor['id'],$create?'consultation_created':'consultation_corrected');return $response;

@@ -11,6 +11,8 @@
 
 Al iniciar sesión con conexión, Electron revisa la cola local y envía los pendientes uno a la vez, respetando su orden de creación. También hay un botón **Sincronizar pendientes** para repetir el intercambio sin crear registros nuevos.
 
+Cuando el botón manual confirma una o más operaciones, la interfaz invalida el directorio en memoria y recarga la pestaña actual para mostrar de inmediato los datos centrales. Si hay una captura sin guardar, conserva esa captura y avisa que la actualización queda pendiente hasta guardarla o descartarla. El inicio de sesión también descarta un directorio precargado antes del envío para no mostrar una copia anterior durante quince segundos.
+
 La API central `POST /api/v1/sync/push` acepta únicamente operaciones de propietarios, pacientes y consultas creadas por la cuenta autenticada. Conserva los UUID generados sin conexión, por lo que un paciente sigue refiriendo al mismo propietario y una consulta al mismo paciente. La API no acepta SQL, tipos arbitrarios ni una identidad de cuenta enviada por la vista.
 
 Cada operación reutiliza su `operationId`. El servidor registra el resultado junto con la entidad y sus versiones dentro de la transacción; si se pierde una respuesta, el reintento recibe ese mismo resultado durable en vez de crear un duplicado. Solo entonces Electron elimina el pendiente y cambia la revisión local correspondiente a `confirmed`.
@@ -26,7 +28,7 @@ Cada operación reutiliza su `operationId`. El servidor registra el resultado ju
 
 T34 envía propietarios, pacientes y consultas que ya podían capturarse offline en T25. Las vacunas y desparasitaciones se guardan centralmente en T27, pero todavía no se capturan offline y por eso no entran en esta cola.
 
-La respuesta central actualiza la entidad que se confirmó. La descarga incremental de cambios de otros equipos y la conciliación de versiones concurrentes se completarán en T35; esta fase no sustituye ese tratamiento ni declara una copia local globalmente actualizada.
+La respuesta central actualiza la entidad que se confirmó. T35 define y conserva los conflictos de actualizaciones offline; la descarga incremental completa de cambios de otros equipos continúa pendiente, por lo que esta fase no declara una copia local globalmente actualizada.
 
 ## Cómo comprobar esta fase
 

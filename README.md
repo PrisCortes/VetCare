@@ -8,6 +8,8 @@ T1-T14 documentados; T15 prepara web/PHP/Electron, T16 incorpora SQLite técnico
 
 El trabajo incluye desarrollar el sistema completo: web, API PHP, MariaDB central, Electron para Windows, SQLite local, sincronización, pruebas e instalador. Las tareas T8–T14 preparan el diseño; la implementación comienza con T15, siguiendo las asignaciones y ventanas del cronograma.
 
+La aplicación distribuida no se conecta a MariaDB ni contiene `DB_*`: se abre contra el origen HTTPS publicado con `VETCARE_APP_URL` mediante `npm run desktop:central`. `npm run dev:desktop` conserva PHP local exclusivamente para desarrollo. Las credenciales de MariaDB pertenecen solo al entorno secreto del servicio central. T35 conserva ambas ramas de una actualización offline concurrente y aplica un orden LWW controlado por el servidor; la descarga incremental entre equipos sigue pendiente.
+
 El desarrollo se entrega una tarea por vez cuando las dependencias lo permiten. Las fechas de referencia son las del cronograma documental; el historial de Git queda a cargo del usuario.
 
 ## Producto previsto
@@ -77,7 +79,7 @@ T32 añade estados, orden, intentos y recuperación para la cola local offline. 
 
 T33 evalúa el intercambio inicial con conexión TLS y tablas temporales: no detecta un bloqueo técnico automatizado, pero conserva como pendiente el recorrido de reconexión real en Electron y no declara aprobada una sincronización completa.
 
-T34 sincroniza propietarios, pacientes y consultas pendientes al iniciar sesión con conexión o mediante acción manual. La recepción de cambios de otros equipos y la conciliación de conflictos siguen pendientes.
+T34 sincroniza propietarios, pacientes y consultas pendientes al iniciar sesión con conexión o mediante acción manual, y refresca la pestaña actual después de confirmaciones para mostrar los datos de inmediato. La recepción de cambios de otros equipos y la conciliación de conflictos siguen pendientes.
 
 T24 incorpora Ver expediente desde pacientes, consultas por fecha, filtros, último peso con origen y versiones de solo lectura. Utiliza las tablas de T23; no añade migraciones. El historial sanitario completo y la persistencia offline siguen pendientes.
 

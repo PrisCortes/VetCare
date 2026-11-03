@@ -8,6 +8,7 @@ function initialDirectory(){const hash=globalThis.location?.hash??'';return hash
 export const authenticatedUser=()=>currentUser;
 export const isOffline=()=>!!currentUser?.offline;
 export const storageLabel=()=>isOffline()?'este equipo · pendiente de sincronización':'MariaDB';
+export const invalidateDirectoryCache=()=>clearDirectories();
 const actions = { login:['POST','/auth/login'], session:['GET','/auth/session'], logout:['POST','/auth/logout'], users:['GET','/admin/users'], createUser:['POST','/admin/users'], updateUser:['PATCH','/admin/users'], owners:['GET','/owners'],createOwner:['POST','/owners'],updateOwner:['PATCH','/owners'] };
 Object.assign(actions,{patients:['GET','/patients'],createPatient:['POST','/patients'],updatePatient:['PATCH','/patients'],validateAttention:['POST','/attention/validate']});
 Object.assign(actions,{consultations:['GET','/consultations'],createConsultation:['POST','/consultations'],updateConsultation:['PATCH','/consultations']});
@@ -70,7 +71,7 @@ export async function initializeAuth(onIdentityChange) {
     try {
       const data=new FormData(form);
       const result=await request('login',{username:data.get('username'),password:data.get('password'),directory:initialDirectory()});
-      form.reset();identity(result.user,result.directory);notice.textContent=result.sync?.applied?`Se sincronizaron ${result.sync.applied} operaciones pendientes.`:'';
+      const applied=Number(result.sync?.applied??0);if(applied>0)clearDirectories();form.reset();identity(result.user,applied>0?null:result.directory);notice.textContent=applied?`Se sincronizaron ${applied} operaciones pendientes.`:'';
     } catch(error) { notice.textContent=error.message;form.elements.password.value=''; }
     finally { button.disabled=false; }
   });

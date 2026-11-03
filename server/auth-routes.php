@@ -8,6 +8,7 @@ require_once __DIR__.'/attention.php';
 require_once __DIR__.'/consultations.php';
 require_once __DIR__.'/sanitary-events.php';
 require_once __DIR__.'/sync.php';
+require_once __DIR__.'/conflicts.php';
 require_once __DIR__.'/history.php';
 require_once __DIR__.'/offline.php';
 
