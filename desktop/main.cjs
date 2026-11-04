@@ -25,7 +25,7 @@ app.whenReady().then(async () => {
   let work=Promise.resolve();const serial=fn=>{const result=work.then(fn);work=result.catch(()=>{});return result;};
   ipcMain.handle('vetcare:auth', (event, action, data) => { authorize(event); return serial(()=>offline.route(action, data)); });
   ipcMain.handle('vetcare:offline', (event, action, data) => { authorize(event); return serial(()=>offline.command(action,data)); });
-  ipcMain.handle('vetcare:environment', event => { authorize(event); return { client: 'desktop', platform: process.platform, stage: 'T35', persistence: true, central: runtime.mode === 'central' }; });
+  ipcMain.handle('vetcare:environment', event => { authorize(event); return { client: 'desktop', platform: process.platform, stage: 'T38', persistence: true, central: runtime.mode === 'central' }; });
   const storageAction = (event, action) => {
     authorize(event);
     try { return { ok: true, data: action() }; }

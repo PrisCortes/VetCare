@@ -8,6 +8,7 @@ if (window.vetcare) {
   try {
     const context = await window.vetcare.environment();
     document.getElementById('client').textContent = context.client === 'desktop' ? 'Electron · Windows' : 'Web';
+    document.getElementById('service-mode').textContent = context.central ? 'Origen HTTPS central' : 'Mismo origen de desarrollo';
     if (context.persistence && window.vetcare.storage) await initializeStorage();
   }
   catch { document.getElementById('client').textContent = 'Escritorio · contexto no disponible'; }
@@ -19,8 +20,8 @@ button.addEventListener('click', async () => {
     if (!response.ok) throw new Error('Respuesta no válida');
     const data = await response.json();
     if (data.service !== 'vetcare-api' || data.status !== 'ok') throw new Error('Servicio inesperado');
-    result.textContent = 'Disponible'; message.textContent = 'PHP respondió correctamente. La conexión central se verifica por separado con npm run db:check en el servidor.';
-  } catch { result.textContent = 'No disponible'; message.textContent = 'No se pudo comprobar la API. Revisa el proceso de desarrollo y vuelve a intentar.'; }
+    result.textContent = 'Disponible'; message.textContent = 'La API respondió correctamente mediante el mismo origen de la interfaz.';
+  } catch { result.textContent = 'No disponible'; message.textContent = 'No se pudo comprobar la API. Revisa el proceso de desarrollo o el origen HTTPS central y vuelve a intentar.'; }
   finally { button.disabled = false; }
 });
 function showProbe(record) {
