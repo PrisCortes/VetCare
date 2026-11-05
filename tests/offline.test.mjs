@@ -42,6 +42,17 @@ test('T36: cada consulta offline conserva snapshot cifrado y copia independiente
  const snapshot=store.snapshots()[0],file=join(dir,'snapshots',snapshot.id+'.snapshot');assert.equal(snapshot.state,'copy_verified');assert.ok(!readFileSync(file).includes(Buffer.from('Motivo recuperable')));assert.deepEqual(store.verifySnapshots(),{verified:1,invalid:0,total:1});
  writeFileSync(file,'contenido alterado');assert.deepEqual(store.verifySnapshots(),{verified:0,invalid:1,total:1});assert.equal(store.snapshots()[0].state,'copy_pending');assert.deepEqual(store.materializeSnapshots(),{verified:1,pending:0,total:1});assert.equal(store.snapshots()[0].state,'copy_verified');store.close();
 });
+test('T37: restaura una copia verificada como nueva revisión sin borrar la historia',async t=>{
+ const dir=fixture(t),key=randomBytes(32),store=openOfflineStore(dir,Buffer.from(key),user.id);
+ const owner=(await offlineAction(store,user,'createOwner',{operationId:randomUUID(),name:'Propietario restauración'})).owner;
+ const patient=(await offlineAction(store,user,'createPatient',{operationId:randomUUID(),ownerId:owner.id,name:'Paciente restauración',species:'Gato'})).patient;
+ const created=await offlineAction(store,user,'createConsultation',{operationId:randomUUID(),kind:'consulta',patientId:patient.id,patientVersion:1,date:'2026-01-01',reason:'Versión protegida'});store.materializeSnapshots();
+ let pending=store.nextPending();store.confirmPending(pending.operationId,owner);pending=store.nextPending();store.confirmPending(pending.operationId,patient);pending=store.nextPending();store.confirmPending(pending.operationId,{...created.consultation,version:1});
+ const corrected=await offlineAction(store,user,'updateConsultation',{operationId:randomUUID(),kind:'consulta',id:created.consultation.id,version:1,patientId:patient.id,patientVersion:1,date:'2026-01-01',reason:'Cambio posterior'});store.materializeSnapshots();
+ pending=store.nextPending();store.confirmPending(pending.operationId,{...corrected.consultation,version:2});
+ const preview=store.previewSnapshot(created.snapshot.id);assert.equal(preview.canRestore,true);assert.equal(preview.consultation.reason,'Versión protegida');assert.equal(preview.current.reason,'Cambio posterior');
+ const restored=store.restoreSnapshot(created.snapshot.id,user);assert.equal(restored.restoredFrom,created.snapshot.id);assert.equal(restored.consultation.version,3);assert.equal(restored.consultation.reason,'Versión protegida');assert.equal(store.versions('consultations',created.consultation.id).length,3);assert.equal(store.nextPending().operation.action,'restoreConsultation');assert.deepEqual(store.materializeSnapshots(),{verified:1,pending:0,total:1});store.close();
+});
 test('bóveda: desbloqueo tras reinicio, aislamiento, inactividad y vencimiento sin borrar pendientes',async t=>{
  const dir=fixture(t),osKey=randomBytes(32);let now=Date.now();
  // Protector simulado para prueba portable; no acredita DPAPI real.

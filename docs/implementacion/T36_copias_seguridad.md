@@ -2,7 +2,7 @@
 
 | Dato | Valor |
 | --- | --- |
-| Responsable del cronograma | Omar de la Cruz Juárez (OD) |
+| Responsable del cronograma | Oscar Delgadillo (OD) |
 | Fechas previstas | 20 al 29 de octubre de 2026 |
 | Implementación | 21 de noviembre de 2026 |
 | Estado | Snapshots locales por consulta y copias independientes verificables implementados; restauración controlada corresponde a T37 |

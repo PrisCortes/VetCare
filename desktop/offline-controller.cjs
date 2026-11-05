@@ -33,6 +33,9 @@ function createOfflineController({directory,origin,remote,safeStorage,trustedPub
     if(action==='profiles')return {ok:true,profiles:local.profiles()};
     if(action==='status'){if(mode!=='offline')return {ok:true,offline:false};const context=await local.access(false),queue=context.store.pendingSummary();return {ok:true,offline:true,pending:queue.total,queue,snapshots:context.store.snapshotSummary()};}
     if(action==='pending'){if(mode!=='offline')throw new Error('Desbloquea tu cuenta local para consultar pendientes.');const context=await local.access(false);return {ok:true,queue:context.store.pendingSummary(),entries:context.store.pendingEntries()};}
+    if(action==='snapshots'){if(mode!=='offline')throw new Error('Desbloquea tu cuenta local para consultar copias de recuperación.');const context=await local.access(false);return {ok:true,snapshots:context.store.snapshots()};}
+    if(action==='restore-preview'){if(mode!=='offline')throw new Error('Desbloquea tu cuenta local antes de restaurar.');const context=await local.access(true);return {ok:true,...context.store.previewSnapshot(data.snapshotId)};}
+    if(action==='restore'){if(mode!=='offline')throw new Error('Desbloquea tu cuenta local antes de restaurar.');if(data.confirm!==true)throw new Error('Confirma explícitamente la restauración.');const context=await local.access(true),result=context.store.restoreSnapshot(data.snapshotId,context.user),recovery=context.store.materializeSnapshots(),queue=context.store.pendingSummary();return {ok:true,result,recovery,queue};}
     if(action==='activity'){if(mode==='offline')await local.access(true);return {ok:true};}
     if(action==='prepare'){
      if(mode!=='online')throw new Error('Inicia sesión con conexión para preparar o renovar este equipo.');

@@ -6,9 +6,9 @@ use PDO;
 function syncOperation(PDO $db,array $actor,array $operation):array{
  $action=$operation['action']??null;$input=$operation['input']??null;$entityId=$operation['entityId']??null;
  if(!is_string($action)||!is_array($input)||array_is_list($input)||!is_string($entityId))failAccess(422,'INVALID_SYNC_OPERATION');
- requireUuid($entityId);$create=str_starts_with($action,'create');$update=str_starts_with($action,'update');
- $map=['createOwner'=>['owner',true],'updateOwner'=>['owner',false],'createPatient'=>['patient',true],'updatePatient'=>['patient',false],'createConsultation'=>['consultation',true],'updateConsultation'=>['consultation',false]];
- if(!isset($map[$action])||(!$create&&!$update))failAccess(422,'INVALID_SYNC_OPERATION');[$type,$create]=$map[$action];
+ requireUuid($entityId);$create=str_starts_with($action,'create');$update=str_starts_with($action,'update');$restore=$action==='restoreConsultation';
+ $map=['createOwner'=>['owner',true],'updateOwner'=>['owner',false],'createPatient'=>['patient',true],'updatePatient'=>['patient',false],'createConsultation'=>['consultation',true],'updateConsultation'=>['consultation',false],'restoreConsultation'=>['consultation',false]];
+ if(!isset($map[$action])||(!$create&&!$update&&!$restore))failAccess(422,'INVALID_SYNC_OPERATION');[$type,$create]=$map[$action];
  if(!$create&&($input['id']??null)!==$entityId)failAccess(422,'INVALID_SYNC_OPERATION');
  $result=match($type){
   'owner'=>saveOwner($db,$actor,$input,$create,$create?$entityId:null,!$create),
