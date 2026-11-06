@@ -85,6 +85,8 @@ T38 integra la web, la API y Electron bajo el mismo contrato `/api/v1`, y actual
 
 T39 revisa permisos, aislamiento de cuentas locales y controles de restauración. La compatibilidad en Android/iOS y el origen HTTPS central siguen pendientes de una prueba con dispositivos y despliegue reales.
 
+T40 relaciona RE01–RE22 con pruebas y pendientes reales. No declara aprobados los requisitos que necesitan mediciones, despliegue, staging o participantes.
+
 T24 incorpora Ver expediente desde pacientes, consultas por fecha, filtros, último peso con origen y versiones de solo lectura. Utiliza las tablas de T23; no añade migraciones. El historial sanitario completo y la persistencia offline siguen pendientes.
 
 T23 habilita Guardar consulta y Guardar corrección en el formulario conectado, con recuperación de registros y versiones. Aplicar `004_consultations` con `npm run db:migrate`. Revisar captura sigue siendo una operación sin guardado; los eventos sanitarios se guardan por separado desde T27.

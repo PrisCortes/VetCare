@@ -2,7 +2,7 @@
 
 | Dato | Valor |
 | --- | --- |
-| Responsable del cronograma | Beatriz González (BG) |
+| Responsable del cronograma | Brandon García (BG) |
 | Fechas previstas | 2 al 6 de noviembre de 2026 |
 | Implementación | 21 de noviembre de 2026 |
 | Estado | Matriz automatizada de permisos y aislamiento revisada; comprobaciones físicas Android/iOS y origen HTTPS central pendientes de ejecución manual |
@@ -43,6 +43,6 @@ Para móvil, abre el origen conectado desde Chrome Android y Safari iOS en equip
 
 ## Responsable, fechas y commit
 
-- Responsable: Beatriz González (BG).
+- Responsable: Brandon García (BG).
 - Ventana del cronograma: 2 al 6 de noviembre de 2026.
 - Commit sugerido, a realizar por el usuario: `test(T39): revisar permisos y aislamiento entre equipos`.
