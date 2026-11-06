@@ -11,8 +11,8 @@ async function createOfflineVault({directory,publicKey,issuer,protector,clock=Da
  try{state=stored?JSON.parse(await protector.decrypt(Buffer.from(stored.payload))):{schema:1,deviceId:randomUUID(),profiles:{},lastClock:clock()};}catch{vaultDb.close();throw new Error('No se pudo abrir la autorización local protegida.');}
  if(state.schema!==1){vaultDb.close();throw new Error('Autorización local de versión desconocida.');}
  async function persist(){const protectedData=await protector.encrypt(JSON.stringify(state));vaultDb.exec('BEGIN IMMEDIATE');try{vaultDb.prepare('INSERT INTO protected_vault(id,payload) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload').run(protectedData);vaultDb.exec('COMMIT');}catch(error){vaultDb.exec('ROLLBACK');throw error;}}
- try{await persist();}catch(error){vaultDb.close();throw error;}let current=null,store=null,lastActivity=0;
- function lock(){if(store)store.close();store=null;current=null;lastActivity=0;}
+ try{await persist();}catch(error){vaultDb.close();throw error;}let current=null,store=null,lastActivity=0,unlockedAt=0;
+ function lock(){if(store)store.close();store=null;current=null;lastActivity=0;unlockedAt=0;}
  function lease(profile){if(clock()<(profile.lastClock??state.lastClock)-120000)throw new Error('El reloj retrocedió. Renueva esta cuenta con conexión.');const claim=verifyLease(profile.lease,publicKey,{issuer,deviceId:state.deviceId,now:(clock()+profile.offset)/1000});profile.lastClock=Math.max(clock(),profile.lastClock??0);return claim;}
  async function observe(){const now=clock();if(now<state.lastClock-120000){lock();throw new Error('El reloj retrocedió. Renueva el acceso local con conexión.');}state.lastClock=Math.max(now,state.lastClock);await persist();}
  return {
@@ -30,10 +30,10 @@ async function createOfflineVault({directory,publicKey,issuer,protector,clock=Da
    const claim=lease(profile);if(clock()<profile.lockedUntil)throw new Error('Demasiados intentos locales. Espera cinco minutos.');
    if(!verifyPassword(password,profile.verifier)){profile.failures++;if(profile.failures>=5){profile.lockedUntil=clock()+300000;profile.failures=0;}await persist();throw new Error('Clave local incorrecta.');}
    profile.failures=0;profile.lockedUntil=0;await persist();
-   const accountPath=join(directory,createHash('sha256').update(issuer+':'+id).digest('hex'));store=openOfflineStore(accountPath,Buffer.from(profile.key,'base64'),id);current=claim.user;lastActivity=clock();return {...current,offline:true,offlineRemainingMs:claim.expiresAt*1000-(clock()+profile.offset)};
+   const accountPath=join(directory,createHash('sha256').update(issuer+':'+id).digest('hex'));store=openOfflineStore(accountPath,Buffer.from(profile.key,'base64'),id);current=claim.user;lastActivity=clock();unlockedAt=clock()+profile.offset;return {...current,offline:true,offlineRemainingMs:claim.expiresAt*1000-(clock()+profile.offset)};
   },
   openForSync(id){const profile=state.profiles[id];if(!profile)throw new Error('No hay una copia local preparada para esta cuenta.');const accountPath=join(directory,createHash('sha256').update(issuer+':'+id).digest('hex'));return openOfflineStore(accountPath,Buffer.from(profile.key,'base64'),id);},
-  async access(touch=true){if(!current||!store)throw new Error('Desbloquea tu cuenta local.');await observe();let claim;try{claim=lease(state.profiles[current.id]);if(clock()-lastActivity>=15*60000)throw new Error('La sesión local se bloqueó por inactividad.');}catch(error){lock();throw error;}if(touch)lastActivity=clock();return {user:{...current,offline:true,offlineRemainingMs:claim.expiresAt*1000-(clock()+state.profiles[current.id].offset)},store,now:clock()+state.profiles[current.id].offset};},
+  async access(touch=true){if(!current||!store)throw new Error('Desbloquea tu cuenta local.');await observe();let claim;try{claim=lease(state.profiles[current.id]);if(clock()-lastActivity>=15*60000)throw new Error('La sesión local se bloqueó por inactividad.');}catch(error){lock();throw error;}if(touch)lastActivity=clock();return {user:{...current,offline:true,offlineRemainingMs:claim.expiresAt*1000-(clock()+state.profiles[current.id].offset)},store,now:clock()+state.profiles[current.id].offset,unlockedAt};},
   lock,
   close(){lock();vaultDb.close();},
  };

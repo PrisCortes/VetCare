@@ -83,6 +83,8 @@ T34 sincroniza propietarios, pacientes y consultas pendientes al iniciar sesión
 
 T38 integra la web, la API y Electron bajo el mismo contrato `/api/v1`, y actualiza el diagnóstico del entorno. El origen HTTPS central sigue sin publicar, por lo que el recorrido distribuido no se declara validado.
 
+T39 revisa permisos, aislamiento de cuentas locales y controles de restauración. La compatibilidad en Android/iOS y el origen HTTPS central siguen pendientes de una prueba con dispositivos y despliegue reales.
+
 T24 incorpora Ver expediente desde pacientes, consultas por fecha, filtros, último peso con origen y versiones de solo lectura. Utiliza las tablas de T23; no añade migraciones. El historial sanitario completo y la persistencia offline siguen pendientes.
 
 T23 habilita Guardar consulta y Guardar corrección en el formulario conectado, con recuperación de registros y versiones. Aplicar `004_consultations` con `npm run db:migrate`. Revisar captura sigue siendo una operación sin guardado; los eventos sanitarios se guardan por separado desde T27.

@@ -13,7 +13,7 @@ En modo offline, el control **Restaurar consulta** permite seleccionar únicamen
 
 La confirmación no reemplaza registros directamente. Crea una nueva revisión local de la misma consulta, conserva las revisiones anteriores, añade una operación `restoreConsultation` a la cola y genera su propio snapshot de recuperación. Cuando se sincronice, el servidor recibe esa operación como una corrección identificada, con las mismas garantías de idempotencia y conflicto que una actualización normal.
 
-La restauración se rechaza si falta una referencia, la copia no está verificada, pertenece a otra cuenta, fue alterada, o existe una edición local pendiente. No recupera permisos, sesiones, claves, cursores ni propietarios/pacientes desde un snapshot.
+La restauración se rechaza si falta una referencia, la copia no está verificada, pertenece a otra cuenta, fue alterada, existe una edición local pendiente o el desbloqueo local tiene cinco minutos o más. No recupera permisos, sesiones, claves, cursores ni propietarios/pacientes desde un snapshot.
 
 ## Cómo comprobar esta fase
 
