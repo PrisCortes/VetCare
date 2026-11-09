@@ -89,6 +89,8 @@ T40 relaciona RE01–RE22 con pruebas y pendientes reales. No declara aprobados 
 
 T41 verifica la cola durable y completa los reintentos al recuperar red o cerrar normalmente. La evidencia de staging M05b sigue pendiente hasta ejecutarse contra un origen HTTPS publicado y un recorrido físico de reconexión.
 
+T42 registra que H5 no se congela aún: la regresión automatizada está conforme, pero M05b, staging HTTPS y reconexión física siguen siendo condiciones obligatorias.
+
 T24 incorpora Ver expediente desde pacientes, consultas por fecha, filtros, último peso con origen y versiones de solo lectura. Utiliza las tablas de T23; no añade migraciones. El historial sanitario completo y la persistencia offline siguen pendientes.
 
 T23 habilita Guardar consulta y Guardar corrección en el formulario conectado, con recuperación de registros y versiones. Aplicar `004_consultations` con `npm run db:migrate`. Revisar captura sigue siendo una operación sin guardado; los eventos sanitarios se guardan por separado desde T27.
