@@ -26,7 +26,7 @@ El evento del navegador es un disparador de reintento, no una confirmación de i
 | T41-SIM-01: cola durable e idempotencia | Conforme | `npm run test:offline`: 11 pruebas aprobadas, incluida confirmación durable sin recrear la entidad |
 | T41-APP-01: reconexión/cierre controlado | Conforme automatizado | Prueba T41 en `tests/desktop-integration.test.mjs`: evento `online`, intento de cierre y plazo de petición verificados |
 | T41-DB-01: diagnóstico de MariaDB | Conforme | `npm run db:diagnose` fuera del aislamiento: `DB_OK`, TLS activo |
-| T41-DB-02: lote contra tablas temporales | Pendiente de repetición | `npm run test:sync:database` no emitió un resultado aprobatorio en esta ejecución; no se acredita como evidencia M05b |
+| T41-DB-02: lote contra tablas temporales | Conforme | `npm run test:sync:database` aprobó: propietarios, pacientes y consultas; UUID, reintentos y bloqueo comprobados en tablas temporales |
 | T41-STG-01: API HTTPS publicada | Pendiente | No hay `VETCARE_APP_URL` configurado para un origen central de staging |
 | T41-RC-01: reconexión física en Electron | Pendiente | Requiere Windows, red controlada y cuenta de prueba; no se simula como si fuera staging |
 
@@ -53,7 +53,7 @@ El lote de `test:sync:database` crea únicamente tablas temporales. Si vuelve a 
 
 ## Criterio M05b
 
-M05b solo puede declararse conforme cuando T41-DB-02, T41-STG-01 y T41-RC-01 estén aprobados, con evidencia antes/después que demuestre cero pérdida y cero duplicación irreversible. Al 21 de noviembre de 2026 ese criterio permanece pendiente.
+M05b solo puede declararse conforme cuando T41-DB-02, T41-STG-01 y T41-RC-01 estén aprobados, con evidencia antes/después que demuestre cero pérdida y cero duplicación irreversible. T41-DB-02 ya es conforme; al 21 de noviembre de 2026 el criterio permanece pendiente por staging HTTPS y reconexión física.
 
 ## Responsable, fechas y commit
 

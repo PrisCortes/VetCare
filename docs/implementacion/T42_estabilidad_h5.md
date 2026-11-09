@@ -16,7 +16,8 @@ T42 revisa la condición de congelar una versión, no agrega una función clíni
 | Núcleo obligatorio conforme | Conforme automatizado | `npm test`: 61/61 pruebas aprobadas el 21 de noviembre de 2026 |
 | Guardado offline y recuperación | Conforme automatizado | T36/T37: snapshot cifrado, verificación de alteración y restauración como nueva revisión cubiertos por `tests/offline.test.mjs` |
 | Sincronización durable, UUID y reintento | Conforme automatizado | Cola y cliente simulados cubiertos por T31/T34/T41; no sustituye infraestructura externa |
-| M05b: intercambio crítico contra staging | Pendiente | T41-DB-02 necesita ejecución aprobatoria contra tablas temporales; el resultado anterior `SYNC_ASSERTION_FAILED` fue corregido en la aserción y debe repetirse |
+| M05b: lote de intercambio contra MariaDB temporal | Conforme | T41-DB-02 aprobó `npm run test:sync:database`: UUID, reintentos, conflicto y bloqueo en tablas temporales |
+| M05b: intercambio crítico contra staging | Pendiente | Falta ejecutar el mismo intercambio a través de la API HTTPS publicada, no solo mediante MariaDB temporal |
 | M05b: origen HTTPS de staging | Pendiente | No existe `VETCARE_APP_URL` configurado para una API central publicada de staging |
 | M05b: reconexión física | Pendiente | Debe observarse en Electron con datos ficticios, contador, UUID y verificación de no duplicados |
 | Identificador inmutable de entrega | Pendiente | No se congela un árbol con cambios sin commit; el usuario debe confirmar el commit y su hash después de que M05b sea conforme |
@@ -29,8 +30,8 @@ Los cambios posteriores a H5, si se aprueba, se limitan a correcciones. Mientras
 
 ## Qué falta para decidir H5
 
-1. Ejecutar `npm run test:sync:database` y conservar su salida aprobatoria. Debe confirmar tablas temporales, UUID, reintento, conflicto y bloqueo.
-2. Publicar/configurar el origen HTTPS de staging en `VETCARE_APP_URL`, usando solo cuenta y datos ficticios.
+1. Publicar/configurar el origen HTTPS de staging en `VETCARE_APP_URL`, usando solo cuenta y datos ficticios.
+2. Ejecutar el intercambio crítico a través de esa API publicada y conservar evidencia antes/después por UUID.
 3. Ejecutar T41-RC-01 desde Electron: desconexión, reintento, recuperación de red, contador final en cero y ausencia de duplicados por UUID.
 4. Repetir `npm test`, `npm run check` y `npm run build` desde el equipo de entrega.
 5. Cuando todos los puntos estén conformes, crear el commit elegido por el usuario y registrar su hash como candidato congelado.
