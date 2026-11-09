@@ -12,12 +12,12 @@ function createOfflineController({directory,origin,remote,safeStorage,trustedPub
   return vaultPromise;
  };
  const delay=attempts=>Math.min(300000,1000*(2**Math.min(8,attempts)));
- const synchronize=async user=>{
+ const synchronize=async(user,timeoutMs=25000)=>{
   let store;try{const local=await getVault();store=local.openForSync(user.id);}catch(error){return {attempted:0,applied:0,retry:0,blocked:0,skipped:true,message:error.message};}
   let attempted=0,applied=0,retry=0,blocked=0;
   try{for(let index=0;index<25;index++){
    const available=store.nextPending(Date.now());if(!available)break;const pending=store.beginPending(available.operationId,Date.now());attempted++;
-   const response=await remote('syncPush',{operations:[pending.operation]});
+   const response=await remote('syncPush',{operations:[pending.operation]},{timeoutMs});
    if(response.status!==200){store.retryPending(pending.operationId,'No se confirmó el envío al servidor.',Date.now()+delay(pending.attempts));retry++;break;}
    const outcome=response.data?.results?.find(item=>item?.operationId===pending.operationId);
    if(outcome?.status==='applied'){store.confirmPending(pending.operationId,outcome.entity);applied++;continue;}
@@ -44,7 +44,7 @@ function createOfflineController({directory,origin,remote,safeStorage,trustedPub
      const result=await remote('offlineBootstrap',{deviceId:local.deviceId});if(result.status!==200)throw new Error(result.data.error?.message||'No se pudo autorizar el equipo.');
      const prepared=await local.prepare(result.data,data.password);return {ok:true,...prepared};
     }
-    if(action==='sync'){if(mode!=='online'||!onlineUser)throw new Error('Inicia sesión con conexión antes de sincronizar.');return {ok:true,...await synchronize(onlineUser)};}
+    if(action==='sync'){if(mode!=='online'||!onlineUser)throw new Error('Inicia sesión con conexión antes de sincronizar.');const timeoutMs=Number.isInteger(data.timeoutMs)&&data.timeoutMs>=500&&data.timeoutMs<=25000?data.timeoutMs:25000;return {ok:true,...await synchronize(onlineUser,timeoutMs)};}
     if(action==='unlock'){const user=await local.unlock(data.id,data.password);mode='offline';return {ok:true,user};}
     if(action==='lock'){local.lock();mode='online';remote.clearSession();return {ok:true};}
     throw new Error('Acción local no permitida.');

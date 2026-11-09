@@ -4,7 +4,7 @@ const { openLocalStore } = require('./storage.cjs');
 const { createAuthClient } = require('./auth.cjs');
 const { createOfflineController } = require('./offline-controller.cjs');
 const { applicationRuntime } = require('./runtime.cjs');
-let window, storage, offline;
+let window, storage, offline, closingWindow=false;
 app.whenReady().then(async () => {
   let runtime;
   try { runtime = applicationRuntime(process.env); } catch (error) { console.error(error.message); app.quit(); return; }
@@ -34,6 +34,12 @@ app.whenReady().then(async () => {
   ipcMain.handle('vetcare:storage:status', event => storageAction(event, () => storage.status()));
   ipcMain.handle('vetcare:storage:read-probe', event => storageAction(event, () => storage.readProbe()));
   ipcMain.handle('vetcare:storage:save-probe', (event, value) => storageAction(event, () => storage.saveProbe(value)));
+  window.on('close', event => {
+    if(closingWindow)return;
+    event.preventDefault();
+    // La cola ya es durable; este intento breve solo adelanta el envío en un cierre normal.
+    serial(()=>offline.command('sync',{timeoutMs:4000})).catch(()=>{}).finally(()=>{closingWindow=true;window.destroy();});
+  });
   window.once('ready-to-show', () => window.show());
   try { await window.loadURL(source); } catch { console.error('No se pudo abrir la web local.'); app.quit(); }
 });

@@ -16,3 +16,14 @@ test('T38: Electron integra web local o central sin exponer secretos de backend'
   assert.deepEqual(applicationRuntime({ VETCARE_APP_URL: 'https://vetcare.example/' }), { source: 'https://vetcare.example', mode: 'central' });
   assert.deepEqual(desktopEnvironment({ DB_HOST: 'secret', DB_PASSWORD: 'secret', OFFLINE_PRIVATE_KEY: 'key', VETCARE_APP_URL: 'https://vetcare.example/' }), { VETCARE_APP_URL: 'https://vetcare.example/' });
 });
+
+test('T41: al recuperar la red y al cerrar normalmente se intenta enviar la cola durable', async () => {
+  const [main, offlineUi, auth] = await Promise.all([
+    readFile(new URL('../desktop/main.cjs', import.meta.url), 'utf8'),
+    readFile(new URL('../web/offline-ui.js', import.meta.url), 'utf8'),
+    readFile(new URL('../desktop/auth.cjs', import.meta.url), 'utf8'),
+  ]);
+  assert.match(main, /window\.on\('close'/); assert.match(main, /offline\.command\('sync',\{timeoutMs:4000\}\)/);
+  assert.match(offlineUi, /window\.addEventListener\('online'/); assert.match(offlineUi, /synchronize\(\{automatic:true\}\)/);
+  assert.match(auth, /AbortSignal\.timeout\(timeoutMs\)/);
+});

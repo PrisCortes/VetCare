@@ -9,15 +9,16 @@ function createAuthClient(origin) {
     validateAttention: ['POST','/attention/validate'],consultations:['GET','/consultations'],createConsultation:['POST','/consultations'],updateConsultation:['PATCH','/consultations'],sanitaryEvents:['GET','/sanitary-events'],createSanitaryEvent:['POST','/sanitary-events'],updateSanitaryEvent:['PATCH','/sanitary-events'],
     history:['GET','/history'],consultationVersions:['GET','/consultation-versions'],offlineBootstrap:['POST','/offline/bootstrap'],syncPush:['POST','/sync/push']
   };
-  const client=async (action, data) => {
+  const client=async (action, data, options={}) => {
     if (!Object.hasOwn(actions, action)) throw new Error('Acción no permitida.');
     const [method, path] = actions[action];
     const body = method === 'GET' ? undefined : JSON.stringify(data ?? {});
     if (body && Buffer.byteLength(body) > (['validateAttention','createConsultation','updateConsultation','createSanitaryEvent','updateSanitaryEvent','syncPush'].includes(action)?524288:16384)) throw new Error('Solicitud demasiado grande.');
+    const timeoutMs=Number.isInteger(options.timeoutMs)&&options.timeoutMs>=500&&options.timeoutMs<=25000?options.timeoutMs:25000;
     try {
       const suffix = method === 'GET' && data ? '?' + new URLSearchParams(data) : '';
       const response = await fetch(origin + '/api/v1' + path + suffix, {
-        method, redirect: 'error', signal: AbortSignal.timeout(25000),
+        method, redirect: 'error', signal: AbortSignal.timeout(timeoutMs),
         headers: { Origin: origin, ...(cookie ? { Cookie: cookie } : {}), ...(csrf ? { 'X-CSRF-Token': csrf } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, body,
       });
       const result = await response.json();
