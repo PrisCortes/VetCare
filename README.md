@@ -93,6 +93,8 @@ T42 registra que H5 no se congela aún: la regresión automatizada está conform
 
 T43 deja preparado el guion de sesiones, datos ficticios y registro de usabilidad; no inventa participantes ni resultados clínicos.
 
+T44 contiene el acta de la primera sesión y permanece pendiente hasta que un participante real ejecute el guion T43.
+
 T24 incorpora Ver expediente desde pacientes, consultas por fecha, filtros, último peso con origen y versiones de solo lectura. Utiliza las tablas de T23; no añade migraciones. El historial sanitario completo y la persistencia offline siguen pendientes.
 
 T23 habilita Guardar consulta y Guardar corrección en el formulario conectado, con recuperación de registros y versiones. Aplicar `004_consultations` con `npm run db:migrate`. Revisar captura sigue siendo una operación sin guardado; los eventos sanitarios se guardan por separado desde T27.
