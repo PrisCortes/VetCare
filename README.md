@@ -101,6 +101,8 @@ T46 prepara la segunda sesión y la consolidación de usabilidad/regresión; req
 
 T47 confirma automáticamente guardado, cola, snapshots y restauración; la prueba nativa de protección Windows/Electron requiere ejecutarse desde una terminal interactiva.
 
+T48 registra un corte de regresión conforme, pero no aprueba H6 hasta completar staging, comprobación Windows y las dos sesiones de prueba.
+
 T24 incorpora Ver expediente desde pacientes, consultas por fecha, filtros, último peso con origen y versiones de solo lectura. Utiliza las tablas de T23; no añade migraciones. El historial sanitario completo y la persistencia offline siguen pendientes.
 
 T23 habilita Guardar consulta y Guardar corrección en el formulario conectado, con recuperación de registros y versiones. Aplicar `004_consultations` con `npm run db:migrate`. Revisar captura sigue siendo una operación sin guardado; los eventos sanitarios se guardan por separado desde T27.
