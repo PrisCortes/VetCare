@@ -97,6 +97,8 @@ T44 contiene el acta de la primera sesión y permanece pendiente hasta que un pa
 
 T45 mantiene el registro de correcciones de la sesión 1; no se aplican cambios especulativos antes de contar con un hallazgo reproducible.
 
+T46 prepara la segunda sesión y la consolidación de usabilidad/regresión; requiere un participante distinto y resultados reales de T44/T45.
+
 T24 incorpora Ver expediente desde pacientes, consultas por fecha, filtros, último peso con origen y versiones de solo lectura. Utiliza las tablas de T23; no añade migraciones. El historial sanitario completo y la persistencia offline siguen pendientes.
 
 T23 habilita Guardar consulta y Guardar corrección en el formulario conectado, con recuperación de registros y versiones. Aplicar `004_consultations` con `npm run db:migrate`. Revisar captura sigue siendo una operación sin guardado; los eventos sanitarios se guardan por separado desde T27.
