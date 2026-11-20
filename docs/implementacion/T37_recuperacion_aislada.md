@@ -2,7 +2,7 @@
 
 | Dato | Valor |
 | --- | --- |
-| Responsable del cronograma | Oscar Delgadillo (OD) |
+| Responsable del cronograma | Oscar Aarón Delgadillo Fernández (OD) |
 | Fechas previstas | 29 de octubre al 5 de noviembre de 2026 |
 | Implementación | 21 de noviembre de 2026 |
 | Estado | Restauración aislada de consultas offline implementada y probada; recuperación completa de instalación y MariaDB no forman parte de esta fase |
@@ -40,6 +40,6 @@ No pruebes restauración con expedientes reales. La recuperación integral de un
 
 ## Responsable, fechas y commit
 
-- Responsable: Oscar Delgadillo (OD).
+- Responsable: Oscar Aarón Delgadillo Fernández (OD).
 - Ventana del cronograma: 29 de octubre al 5 de noviembre de 2026.
 - Commit sugerido, a realizar por el usuario: `feat(T37): restaurar consultas desde copias verificadas`.

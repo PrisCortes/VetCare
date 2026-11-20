@@ -2,7 +2,7 @@
 
 | Dato | Valor |
 | --- | --- |
-| Responsable del cronograma | Oscar Delgadillo (OD) |
+| Responsable del cronograma | Oscar Aarón Delgadillo Fernández (OD) |
 | Fechas previstas | 20 al 29 de octubre de 2026 |
 | Implementación | 21 de noviembre de 2026 |
 | Estado | Snapshots locales por consulta y copias independientes verificables implementados; restauración controlada corresponde a T37 |
@@ -51,6 +51,6 @@ No elimines ni alteres manualmente archivos dentro de los datos de la aplicació
 
 ## Responsable, fechas y commit
 
-- Responsable: Omar de la Cruz Juárez (OD).
+- Responsable: Oscar Aarón Delgadillo Fernández (OD).
 - Ventana del cronograma: 20 al 29 de octubre de 2026.
 - Commit sugerido, a realizar por el usuario: `feat(T36): crear snapshots cifrados verificables`.
