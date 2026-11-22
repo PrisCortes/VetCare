@@ -7,7 +7,7 @@ function clearDirectories(){directoryCache.clear();directoryGeneration++;}
 function initialDirectory(){const hash=globalThis.location?.hash??'';return hash==='#propietarios'?'owners':hash===''||hash==='#pacientes'?'patients':null;}
 export const authenticatedUser=()=>currentUser;
 export const isOffline=()=>!!currentUser?.offline;
-export const storageLabel=()=>isOffline()?'este equipo · pendiente de sincronización':'MariaDB';
+export const storageLabel=()=>isOffline()?'este equipo · pendiente de sincronización':'VetCare';
 export const invalidateDirectoryCache=()=>clearDirectories();
 const actions = { login:['POST','/auth/login'], session:['GET','/auth/session'], logout:['POST','/auth/logout'], users:['GET','/admin/users'], createUser:['POST','/admin/users'], updateUser:['PATCH','/admin/users'], owners:['GET','/owners'],createOwner:['POST','/owners'],updateOwner:['PATCH','/owners'] };
 Object.assign(actions,{patients:['GET','/patients'],createPatient:['POST','/patients'],updatePatient:['PATCH','/patients'],validateAttention:['POST','/attention/validate']});
@@ -16,7 +16,7 @@ Object.assign(actions,{sanitaryEvents:['GET','/sanitary-events'],createSanitaryE
 Object.assign(actions,{history:['GET','/history'],carnet:['GET','/carnet'],consultationVersions:['GET','/consultation-versions']});
 export async function request(action, data, {fresh=false}={}) {
   if (!Object.hasOwn(actions,action)) throw new Error('Acción no permitida.');
-  const cacheable=['owners','patients'].includes(action)&&!!currentUser&&!currentUser.offline;
+  const cacheable=['owners','patients','history','carnet','consultations','sanitaryEvents','consultationVersions'].includes(action)&&!!currentUser&&!currentUser.offline;
   const cacheKey=JSON.stringify([currentUser?.id,action,data??null]);
   const cached=directoryCache.get(cacheKey);
   if(cacheable&&!fresh&&cached&&Date.now()-cached.at<15000)return structuredClone(cached.data);
@@ -28,7 +28,7 @@ export async function request(action, data, {fresh=false}={}) {
     const [method,path] = actions[action];
     const suffix=method==='GET'&&data?'?'+new URLSearchParams(data):'';
     const result = await fetch('/api/v1' + path + suffix, {
-      method, credentials:'same-origin', cache:'no-store', signal:AbortSignal.timeout(25000),
+      method, credentials:'same-origin', cache:'no-store', signal:AbortSignal.timeout(45000),
       headers:{ ...(method!=='GET'?{'Content-Type':'application/json','X-CSRF-Token':csrf}:{}) },
       ...(method!=='GET'?{body:JSON.stringify(data ?? {})}:{}),
     });
@@ -49,7 +49,7 @@ export async function request(action, data, {fresh=false}={}) {
 }
 export async function initializeAuth(onIdentityChange) {
   const gate=document.getElementById('login-gate'), notice=document.getElementById('login-notice'), form=document.getElementById('login-form');
-  const userLabel=document.getElementById('session-user'), logout=document.getElementById('logout'), manage=document.getElementById('manage-users'), modal=document.getElementById('users-dialog');
+  const userLabel=document.getElementById('session-user'), logout=document.getElementById('logout'), manage=document.getElementById('manage-users'), modal=document.getElementById('users-dialog'),userFormModal=document.getElementById('user-form-dialog'),userForm=document.getElementById('create-user-form');
   function identity(user,directory=null) {
     const previous=currentUser;currentUser=user;csrf=user?csrf:'';
     clearTimeout(offlineExpiryTimer);if(user?.offline&&Number.isFinite(user.offlineRemainingMs))offlineExpiryTimer=setTimeout(()=>{window.vetcare?.offline?.('lock');identity(null);},Math.max(0,user.offlineRemainingMs));
@@ -61,7 +61,7 @@ export async function initializeAuth(onIdentityChange) {
     userLabel.textContent=user ? `${user.name} · ${user.role==='administrador'?'Administrador':'Veterinario'}` : '';
     manage.hidden=user?.role!=='administrador'||!!user?.offline;logout.hidden=!user;
     offlineUi.identity(user);
-    if (!user && modal.open) modal.close();
+    if (!user && modal.open) modal.close();if(!user&&userFormModal?.open)userFormModal.close();
     if (previous?.id!==user?.id||!!previous?.offline!==!!user?.offline)onIdentityChange(user);
   }
   const offlineUi=initializeOfflineUi({onUnlock:user=>identity(user)});
@@ -90,14 +90,16 @@ export async function initializeAuth(onIdentityChange) {
     modal.showModal();document.getElementById('users-notice').textContent='';
     try { await listUsers(); } catch(error) { document.getElementById('users-notice').textContent=error.message; }
   });
-  document.getElementById('close-users').addEventListener('click',()=>{modal.close();document.getElementById('create-user-form').reset();});
-  modal.addEventListener('cancel',()=>document.getElementById('create-user-form').reset());
-  document.getElementById('create-user-form').addEventListener('submit',async event=>{
+  document.getElementById('close-users').addEventListener('click',()=>modal.close());
+  document.getElementById('open-create-user').addEventListener('click',()=>{userForm.reset?.();document.getElementById('create-user-notice').textContent='';userFormModal.showModal?.();userForm.elements?.name?.focus();});
+  userFormModal?.querySelectorAll?.('[data-close-user-form]').forEach(button=>button.addEventListener('click',()=>{userForm.reset?.();userFormModal.close?.();}));
+  userFormModal?.addEventListener('cancel',()=>userForm.reset?.());
+  userForm?.addEventListener('submit',async event=>{
     event.preventDefault();const button=event.target.querySelector('button');button.disabled=true;
     try {
-      await request('createUser',Object.fromEntries(new FormData(event.target)));event.target.reset();await listUsers();
+      await request('createUser',Object.fromEntries(new FormData(event.target)));event.target.reset();await listUsers();userFormModal.close();
       document.getElementById('users-notice').textContent='Cuenta creada.';
-    } catch(error) { document.getElementById('users-notice').textContent=error.message; }
+    } catch(error) { document.getElementById('create-user-notice').textContent=error.message; }
     finally { button.disabled=false;event.target.elements.password.value=''; }
   });
   document.getElementById('users-list').addEventListener('click',async event=>{

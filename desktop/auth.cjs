@@ -7,7 +7,7 @@ function createAuthClient(origin) {
     owners: ['GET','/owners'], createOwner: ['POST','/owners'], updateOwner: ['PATCH','/owners'],
     patients: ['GET','/patients'], createPatient: ['POST','/patients'], updatePatient: ['PATCH','/patients'],
     validateAttention: ['POST','/attention/validate'],consultations:['GET','/consultations'],createConsultation:['POST','/consultations'],updateConsultation:['PATCH','/consultations'],sanitaryEvents:['GET','/sanitary-events'],createSanitaryEvent:['POST','/sanitary-events'],updateSanitaryEvent:['PATCH','/sanitary-events'],
-    history:['GET','/history'],consultationVersions:['GET','/consultation-versions'],offlineBootstrap:['POST','/offline/bootstrap'],syncPush:['POST','/sync/push']
+    history:['GET','/history'],carnet:['GET','/carnet'],consultationVersions:['GET','/consultation-versions'],offlineBootstrap:['POST','/offline/bootstrap'],syncPush:['POST','/sync/push']
   };
   const client=async (action, data, options={}) => {
     if (!Object.hasOwn(actions, action)) throw new Error('Acción no permitida.');

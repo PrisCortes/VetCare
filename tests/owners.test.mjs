@@ -14,6 +14,6 @@ test('propietario: rechaza vacíos, tipos, controles y longitudes excesivas',()=
 test('propietario: UUID generado y rechazo de identificadores manipulados',()=>{
  assert.equal(evaluate(`echo (int)(\\VetCare\\requireUuid(\\VetCare\\uuid())!=='');try{\\VetCare\\requireUuid("' OR 1=1");}catch(\\VetCare\\AccessError $e){echo $e->status;}`),'1422');
 });
-test('vista de propietarios identifica guardado central y ofrece alta sin usar muestra',()=>{
- const html=ownersPage();assert.match(html,/Registros guardados en MariaDB/);assert.match(html,/id="owner-form"/);assert.match(html,/maxlength="200" required/);assert.ok(!html.includes('Ana Martínez'));
+test('vista de propietarios ofrece alta sin exponer detalles técnicos del almacenamiento',()=>{
+ const html=ownersPage();assert.match(html,/Datos de contacto y registro de propietarios/);assert.doesNotMatch(html,/MariaDB/);assert.match(html,/id="owner-form"/);assert.match(html,/maxlength="200" required/);assert.ok(!html.includes('Ana Martínez'));
 });

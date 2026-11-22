@@ -24,7 +24,7 @@ function patientFields(array $data): array {
     return [...$fields,'birthDate'=>$birth,'ageValue'=>$age,'ageUnit'=>$unit,'ageReference'=>$reference];
 }
 function publicPatient(array $row):array {
-    return ['id'=>$row['id'],'ownerId'=>$row['owner_id'],'ownerName'=>$row['owner_name']??'', 'name'=>$row['name'],'species'=>$row['species'],'breed'=>$row['breed'],'birthDate'=>$row['birth_date'],'ageValue'=>$row['age_value']===null?null:(int)$row['age_value'],'ageUnit'=>$row['age_unit'],'ageReference'=>$row['age_reference'],'active'=>(bool)$row['active'],'version'=>(int)$row['version'],'updatedAt'=>(int)$row['updated_at']];
+    return ['id'=>$row['id'],'ownerId'=>$row['owner_id'],'ownerName'=>$row['owner_name']??'', 'ownerAddress'=>$row['owner_address']??'', 'ownerLocality'=>$row['owner_locality']??'', 'name'=>$row['name'],'species'=>$row['species'],'breed'=>$row['breed'],'birthDate'=>$row['birth_date'],'ageValue'=>$row['age_value']===null?null:(int)$row['age_value'],'ageUnit'=>$row['age_unit'],'ageReference'=>$row['age_reference'],'active'=>(bool)$row['active'],'version'=>(int)$row['version'],'updatedAt'=>(int)$row['updated_at']];
 }
 function listPatients(PDO $db,array $actor,array $query):array {
     requirePermission($actor,'clinical.read');

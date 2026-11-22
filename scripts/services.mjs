@@ -21,14 +21,14 @@ export async function startServices({ webPort = 5173, apiPort = 8787 } = {}) {
     try { path = decodeURIComponent((req.url || '/').split('?')[0]); } catch { res.writeHead(400); res.end('Ruta inválida'); return; }
     if (path.startsWith('/api/')) {
       let timedOut = false;
-      const upstream = httpRequest({ hostname: '127.0.0.1', port: apiPort, path: req.url, method: req.method, headers: { ...req.headers, host: `127.0.0.1:${apiPort}` }, timeout: 20000 }, remote => {
+      const upstream = httpRequest({ hostname: '127.0.0.1', port: apiPort, path: req.url, method: req.method, headers: { ...req.headers, host: `127.0.0.1:${apiPort}` }, timeout: 45000 }, remote => {
         res.writeHead(remote.statusCode || 502, remote.headers); remote.pipe(res);
       });
       upstream.on('timeout', () => { timedOut = true; upstream.destroy(); });
       upstream.on('error', () => {
         if (!res.headersSent) res.writeHead(timedOut ? 504 : 502, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: timedOut
-          ? { code: 'API_TIMEOUT', message: 'La API tardó demasiado en responder. Comprueba la conexión central con npm run db:check.' }
+          ? { code: 'API_TIMEOUT', message: 'El servicio central está tardando más de lo habitual. Intenta de nuevo en unos minutos.' }
           : { code: 'API_UNAVAILABLE', message: 'No se pudo contactar con PHP. Reinicia npm run dev y revisa su terminal.' } }));
       });
       req.pipe(upstream); return;

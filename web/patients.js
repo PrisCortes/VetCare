@@ -42,6 +42,7 @@ export function initializePatients(panel,{onDirty=()=>{},onAttention=()=>{},onHi
    const result=await request('patients',{...Object.fromEntries(new FormData(find('patients-search'))),page:String(page)},{fresh});
    if(!panel.isConnected||run!==sequence)return;rows=result.patients;more=result.hasMore;
    find('patients-rows').innerHTML=rows.length?rows.map(patient=>`<tr><td data-label="Paciente"><strong>${e(patient.name)}</strong><small>${e(patient.breed||'Sin raza registrada')}</small></td><td data-label="Especie">${e(patient.species)}</td><td data-label="Propietario">${e(patient.ownerName)}</td><td data-label="Estado">${patient.active?'Activo':'Inactivo'}</td><td data-label="Acciones"><button type="button" class="text-button" data-patient-history="${e(patient.id)}">Ver expediente</button><button type="button" class="text-button" data-patient-carnet="${e(patient.id)}">Ver carnet</button><button type="button" class="text-button" data-patient-attention="${e(patient.id)}" ${patient.active?'':'disabled'}>Preparar atenci&#243;n</button><button type="button" class="text-button" data-patient-records="${e(patient.id)}">Consultas</button><button type="button" class="text-button" data-patient-edit="${e(patient.id)}">Editar</button><button type="button" class="text-button" data-patient-toggle="${e(patient.id)}">${patient.active?'Dar de baja':'Reactivar'}</button></td></tr>`).join(''):'<tr><td colspan="5">Sin pacientes para este filtro.</td></tr>';
+   const actionIcons=[['[data-patient-history]','Ver expediente','folder'],['[data-patient-carnet]','Ver carnet','card'],['[data-patient-attention]','Preparar atención','clipboard'],['[data-patient-edit]','Editar paciente','pencil'],['[data-patient-toggle]','Dar de baja o reactivar','archive']];for(const [selector,label,icon] of actionIcons)for(const button of find('patients-rows').querySelectorAll(selector)){button.classList.add('action-icon');button.setAttribute('aria-label',label);button.setAttribute('title',label);button.innerHTML=`<svg aria-hidden="true"><use href="#${icon}"/></svg>`;}
    find('patients-page').textContent='Página '+page;find('patients-prev').disabled=page<=1;find('patients-next').disabled=!more;notice.textContent=`${rows.length} pacientes en esta página.`;
   }catch(error){if(panel.isConnected&&run===sequence)notice.textContent=error.message;}
  }
@@ -74,8 +75,10 @@ export function initializePatients(panel,{onDirty=()=>{},onAttention=()=>{},onHi
    catch(error){notice.textContent=error.message;if(error.status&&error.status<500)operations.delete(key);}finally{busy=false;button.disabled=false;}
   }
  });
+ let filterTimer,ownerTimer;const queueFilter=()=>{clearTimeout(filterTimer);filterTimer=setTimeout(()=>{page=1;load(true);},180);};
+ find('patient-owner-query').addEventListener('input',()=>{clearTimeout(ownerTimer);ownerTimer=setTimeout(()=>owners(),180);});
  find('patient-find-owner').addEventListener('click',()=>owners());find('patient-more-owners').addEventListener('click',()=>owners(true));
- find('patients-search').addEventListener('submit',event=>{event.preventDefault();page=1;load(true);});
+ find('patients-search').addEventListener('input',queueFilter);find('patients-search').addEventListener('change',queueFilter);find('patients-search').addEventListener('submit',event=>{event.preventDefault();page=1;load(true);});
  find('patients-prev').addEventListener('click',()=>{if(page>1){page--;load();}});find('patients-next').addEventListener('click',()=>{if(more){page++;load();}});
  load();
 }

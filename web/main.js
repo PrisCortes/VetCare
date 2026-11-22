@@ -1,6 +1,5 @@
 import {createViewState,escapeHtml as e} from './view-state.js';
 import {patientsView,patientRows,ownersView,detailView,carnetView,consultationView,formFields} from './views.js';
-import {initializeDiagnostics} from './diagnostics.js';
 import {initializeAuth,authenticatedUser,invalidateDirectoryCache,isOffline} from './auth.js';
 import {ownersPage,initializeOwners} from './owners.js';
 import {patientsPage,initializePatients} from './patients.js';
@@ -8,9 +7,9 @@ import {attentionPage,initializeAttention} from './attention.js';
 import {historyPage,initializeHistory} from './history.js';
 import {carnetPage,initializeCarnet} from './carnet.js';
 const state=createViewState(),main=document.getElementById('main'),dialog=document.getElementById('record-dialog');
-let attentionPatient=null,attentionCorrection=null;
+let attentionPatient=null,attentionCorrection=null,attentionReturn='pacientes';
 let query='',species='Todas',detailTab='historial',carnetTab='vacunas',currentRoute='',dirty=false,dialogDirty=false,dialogKind='',toastTimer;
-const routes=new Set(['pacientes','propietarios','expediente','carnet','consulta','entorno']);
+const routes=new Set(['pacientes','propietarios','expediente','carnet','consulta']);
 function route(){const value=location.hash.slice(1);return routes.has(value)?value:'pacientes';}
 function notify(text){const box=document.getElementById('toast');box.textContent=text;box.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{box.hidden=true;},6500);}
 function leaveDraft(){return !dirty||window.confirm('Esta captura no está guardada. ¿Quieres descartarla?');}
@@ -21,16 +20,13 @@ function render(){
  document.querySelectorAll('[data-nav]').forEach(link=>{const active=link.dataset.nav===(currentRoute==='consulta'?'expediente':currentRoute);if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});
  document.querySelector('.nav-count').textContent=state.data.patients.length;
  document.querySelector('.nav-count').hidden=!state.demo;
- const names={pacientes:'Pacientes',propietarios:'Propietarios',expediente:'Expediente',carnet:'Carnet sanitario',consulta:'Nueva consulta',entorno:'Estado del entorno'};
+ const names={pacientes:'Pacientes',propietarios:'Propietarios',expediente:'Expediente',carnet:'Carnet sanitario',consulta:'Nueva atención'};
  document.getElementById('breadcrumb').textContent=names[currentRoute];document.title='VetCare · '+names[currentRoute];
- document.getElementById('mode-note').textContent=isOffline()?'Sin conexión · Guardado local, pendiente de sincronización.':state.demo?'Demostración activa · Datos ficticios, sin guardado clínico.':['propietarios','pacientes'].includes(currentRoute)?'Directorio central · Guardado con conexión.':currentRoute==='expediente'?'Historial central de consultas y eventos sanitarios.':currentRoute==='carnet'?'Carnet sanitario central por paciente.':'Atención central conectada.';
- document.getElementById('clear-demo').hidden=!state.demo;
- if(currentRoute==='entorno'){main.innerHTML=document.getElementById('environment-template').innerHTML;initializeDiagnostics(document.getElementById('environment-panel')).catch(()=>notify('No se pudo completar el diagnóstico del entorno.'));}
- else if(currentRoute==='propietarios'&&!state.demo){main.innerHTML=ownersPage();initializeOwners(document.getElementById('owners-panel'),{onDirty:value=>{dirty=value;}});}
- else if(currentRoute==='pacientes'&&!state.demo){main.innerHTML=patientsPage();initializePatients(document.getElementById('patients-panel'),{onDirty:value=>{dirty=value;},onAttention:patient=>{attentionPatient=patient;attentionCorrection=null;go('consulta');},onHistory:patient=>{attentionPatient=patient;attentionCorrection=null;go('expediente');},onCarnet:patient=>{attentionPatient=patient;attentionCorrection=null;go('carnet');}});}
- else if(currentRoute==='expediente'&&!state.demo){main.innerHTML=historyPage(attentionPatient);if(attentionPatient)initializeHistory(document.getElementById('history-panel'),attentionPatient,{onNew:patient=>{attentionPatient=patient;attentionCorrection=null;go('consulta');},onCorrect:(patient,record)=>{attentionPatient=patient;attentionCorrection=record;go('consulta');},onCarnet:patient=>{attentionPatient=patient;attentionCorrection=null;go('carnet');}});}
+ if(currentRoute==='propietarios'&&!state.demo){main.innerHTML=ownersPage();initializeOwners(document.getElementById('owners-panel'),{onDirty:value=>{dirty=value;}});}
+ else if(currentRoute==='pacientes'&&!state.demo){main.innerHTML=patientsPage();initializePatients(document.getElementById('patients-panel'),{onDirty:value=>{dirty=value;},onAttention:patient=>{attentionPatient=patient;attentionCorrection=null;attentionReturn='pacientes';go('consulta');},onHistory:patient=>{attentionPatient=patient;attentionCorrection=null;go('expediente');},onCarnet:patient=>{attentionPatient=patient;attentionCorrection=null;go('carnet');}});}
+ else if(currentRoute==='expediente'&&!state.demo){main.innerHTML=historyPage(attentionPatient);if(attentionPatient)initializeHistory(document.getElementById('history-panel'),attentionPatient,{onNew:patient=>{attentionPatient=patient;attentionCorrection=null;attentionReturn='expediente';go('consulta');},onCorrect:(patient,record)=>{attentionPatient=patient;attentionCorrection=record;attentionReturn='expediente';go('consulta');},onCarnet:patient=>{attentionPatient=patient;attentionCorrection=null;go('carnet');}});}
  else if(currentRoute==='carnet'&&!state.demo){main.innerHTML=carnetPage(attentionPatient);if(attentionPatient)initializeCarnet(document.getElementById('carnet-panel'),attentionPatient,{onHistory:patient=>{attentionPatient=patient;go('expediente');}});}
- else if(currentRoute==='consulta'&&!state.demo){main.innerHTML=attentionPage(attentionPatient);if(attentionPatient)initializeAttention(document.getElementById('attention-panel'),attentionPatient,{initialConsultation:attentionCorrection,onDirty:value=>{dirty=value;}});}
+ else if(currentRoute==='consulta'&&!state.demo){main.innerHTML=attentionPage(attentionPatient);if(attentionPatient){const attentionPanel=document.getElementById('attention-panel');attentionPanel.querySelector('.page-heading small')?.remove();const back=attentionPanel.querySelector('[data-route="pacientes"]');if(back){back.textContent=attentionReturn==='expediente'?'Volver a expediente':'Volver a pacientes';back.dataset.route=attentionReturn;}initializeAttention(attentionPanel,attentionPatient,{initialConsultation:attentionCorrection,onDirty:value=>{dirty=value;}});}}
  else main.innerHTML=({pacientes:()=>patientsView(state,query,species),propietarios:()=>ownersView(state),expediente:()=>detailView(state,detailTab),carnet:()=>carnetView(state,carnetTab),consulta:()=>consultationView(state)})[currentRoute]();
  main.focus({preventScroll:true});
  window.scrollTo({top:0,left:0,behavior:"instant"});

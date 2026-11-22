@@ -14,18 +14,25 @@ export function historyPage(patient){
 }
 export function initializeHistory(panel,initialPatient,{onNew=()=>{},onCorrect=()=>{},onCarnet=()=>{}}={}){
  const find=id=>panel.querySelector('#'+id);let patient=initialPatient,rows=[],stack=[null],nextCursor=null,sequence=0,versionSequence=0,versionId=null,before=null;
+ const summarySection=find('history-summary').closest('section'),filterSection=find('history-filters').closest('section'),consultationsSection=find('history-records').closest('section[aria-labelledby]'),sanitarySection=find('history-sanitary'),versionsSection=find('history-versions');
+ panel.querySelector('.page-heading small')?.remove();summarySection.querySelector('p:last-child')?.remove();
+ const nextSection=document.createElement('section');nextSection.className='panel history-card';nextSection.innerHTML='<h2>Próximo evento</h2><p id="history-next-event">Sin eventos sanitarios programados.</p>';sanitarySection.after(nextSection);
+ const tabs=document.createElement('div');tabs.className='history-tabs';tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Secciones del expediente');tabs.innerHTML='<button type="button" data-history-tab="summary" aria-pressed="true">Resumen</button><button type="button" data-history-tab="consultations" aria-pressed="false">Consultas</button><button type="button" data-history-tab="sanitary" aria-pressed="false">Antecedentes sanitarios</button><button type="button" data-history-tab="next" aria-pressed="false">Próximo evento</button>';panel.querySelector('.page-heading').after(tabs);
+ function showSection(name){const groups={summary:[summarySection],consultations:[filterSection,consultationsSection,versionsSection],sanitary:[sanitarySection],next:[nextSection]};for(const [key,sections] of Object.entries(groups))for(const section of sections)section.hidden=key!==name;tabs.querySelectorAll('[data-history-tab]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.historyTab===name)));}
+ tabs.addEventListener('click',event=>{const button=event.target.closest('[data-history-tab]');if(button)showSection(button.dataset.historyTab);});showSection('summary');
  async function load(){
   const run=++sequence;versionSequence++;versionId=null;find('history-versions').hidden=true;find('history-records').replaceChildren();find('history-notice').textContent='Cargando expediente…';find('history-prev').disabled=true;find('history-next').disabled=true;find('history-new').disabled=true;
   try{
    const filters=Object.fromEntries(new FormData(find('history-filters')));const result=await request('history',{patientId:initialPatient.id,...filters,cursor:stack.at(-1)||''});
    if(!panel.isConnected||run!==sequence)return;patient=result.patient;rows=result.consultations;nextCursor=result.nextCursor;
    find('history-title').textContent='Historial de '+patient.name;find('history-patient').textContent=`${patient.species} · Propietario: ${patient.ownerName} · ${patient.active?'Activo':'Inactivo'}`;
-   find('history-summary').textContent=`Total de consultas del paciente: ${result.totalConsultations}. Esta página: ${rows.length}.`;
-   const weight=result.latestConsultationWeight;find('history-weight').textContent=weight?`Último peso registrado en consulta: ${weight.grams/1000} kg · Fecha ${weight.date} · Consulta ${weight.consultationId}`:'Sin peso registrado en consultas.';
+   find('history-summary').textContent=`Total de consultas del paciente: ${result.totalConsultations}.`;
+   const weight=result.latestConsultationWeight;find('history-weight').textContent=weight?`Último peso registrado: ${weight.grams/1000} kg · Fecha ${weight.date}`:'Sin peso registrado en consultas.';
    const totals=result.sanitaryTotals??{vaccinations:0,dewormings:0};find('history-sanitary-summary').textContent=`Eventos sanitarios: ${totals.vaccinations} vacunación(es) y ${totals.dewormings} desparasitación(es).`;
    find('history-records').innerHTML=rows.length?rows.map(historyCard).join(''):'<section class="panel empty"><h2>Sin consultas para estos filtros</h2><p>Prueba otro intervalo o término de búsqueda.</p></section>';
    const sanitary=result.sanitaryEvents??[];find('history-sanitary-records').innerHTML=sanitary.length?sanitary.map(sanitaryHistoryCard).join(''):'<section class="panel empty"><p>Sin vacunas ni desparasitaciones registradas.</p></section>';find('history-sanitary-notice').textContent=result.hasMoreSanitaryEvents?'Se muestran los 50 eventos sanitarios más recientes. Abre el carnet para consultar la lista completa disponible.':'Vacunas y desparasitaciones registradas para este paciente.';
-   find('history-page').textContent='Página '+stack.length;find('history-prev').disabled=stack.length<=1;find('history-next').disabled=!nextCursor;find('history-new').disabled=!patient.active;find('history-notice').textContent='Expediente recuperado de '+storageLabel()+'.';
+   const upcoming=sanitary.filter(event=>event.nextDate&&event.nextDate>=new Date().toISOString().slice(0,10)).sort((a,b)=>a.nextDate.localeCompare(b.nextDate))[0];find('history-next-event').textContent=upcoming?`${upcoming.kind==='vacuna'?'Vacunación':'Desparasitación'}: ${upcoming.product} · ${upcoming.nextDate}`:'Sin eventos sanitarios programados.';
+   find('history-page').textContent='Página '+stack.length;find('history-prev').disabled=stack.length<=1;find('history-next').disabled=!nextCursor;find('history-new').disabled=!patient.active;find('history-notice').textContent='Expediente actualizado.';
   }catch(error){if(panel.isConnected&&run===sequence){find('history-notice').textContent=error.message+' No se pudo actualizar el expediente.';find('history-summary').textContent='';find('history-weight').textContent='';find('history-sanitary-summary').textContent='';find('history-sanitary-records').replaceChildren();}}
  }
  async function versions(id,append=false){
@@ -37,7 +44,8 @@ export function initializeHistory(panel,initialPatient,{onNew=()=>{},onCorrect=(
    find('history-version-rows').insertAdjacentHTML('beforeend',html);before=result.nextBefore;find('history-more-versions').hidden=!before;find('history-versions-notice').textContent=result.versions.length?'Versiones conservadas; consulta de solo lectura.':'No hay versiones disponibles.';box.scrollIntoView({block:'nearest'});
   }catch(error){if(panel.isConnected&&run===versionSequence){find('history-versions-notice').textContent=error.message;find('history-more-versions').hidden=!before;}}
  }
- find('history-filters').addEventListener('submit',event=>{event.preventDefault();stack=[null];load();});
+ let filterTimer;const queueFilter=()=>{clearTimeout(filterTimer);filterTimer=setTimeout(()=>{stack=[null];load();},180);};
+ find('history-filters').addEventListener('input',queueFilter);find('history-filters').addEventListener('change',queueFilter);find('history-filters').addEventListener('submit',event=>{event.preventDefault();stack=[null];load();});
  panel.addEventListener('click',event=>{
   const button=event.target.closest('button');if(!button)return;
   if(button.id==='history-next'&&nextCursor){stack.push(nextCursor);load();}

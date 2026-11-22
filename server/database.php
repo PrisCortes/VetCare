@@ -32,9 +32,15 @@ function databaseConfiguration(): array {
         throw new RuntimeException('DB_CA_REQUIRED');
     }
     fclose($handle);
+    $persistent = getenv('DB_PERSISTENT');
+    if ($persistent !== false && !in_array($persistent, ['0', '1'], true)) {
+        throw new RuntimeException('DB_INVALID_CONFIGURATION');
+    }
     return [
         'dsn' => "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
         'user' => $user, 'password' => $password, 'ca' => $ca,
+        // Reutiliza el canal TLS en procesos PHP que siguen activos. DB_PERSISTENT=0 lo desactiva.
+        'persistent' => $persistent !== '0',
     ];
 }
 
@@ -45,7 +51,7 @@ function centralDatabase(): PDO {
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
-        PDO::ATTR_PERSISTENT => false,
+        PDO::ATTR_PERSISTENT => $config['persistent'],
         PDO::ATTR_TIMEOUT => 5,
         Mysql::ATTR_LOCAL_INFILE => false,
         Mysql::ATTR_MULTI_STATEMENTS => false,

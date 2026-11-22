@@ -36,9 +36,17 @@ test('no permite conexión sin certificado CA legible', () => {
   }
 });
 
-test('opciones construyen DSN UTF-8 sin confundir contraseña con sintaxis', () => {
-  const code = `require 'server/database.php'; $c = \\VetCare\\databaseConfiguration(); echo json_encode(['dsn' => $c['dsn'], 'passwordIntact' => $c['password'] === 'secret-password']);`;
+test('opciones construyen DSN UTF-8, conservan la contraseña y reutilizan conexiones TLS', () => {
+  const code = `require 'server/database.php'; $c = \\VetCare\\databaseConfiguration(); echo json_encode(['dsn' => $c['dsn'], 'passwordIntact' => $c['password'] === 'secret-password', 'persistent' => $c['persistent']]);`;
   assert.deepEqual(check({ ...valid, DB_SSL_CA: 'tests/central-database.test.mjs' }, code), {
-    exit: 0, data: { dsn: 'mysql:host=db.example.com;port=3306;dbname=vetcare;charset=utf8mb4', passwordIntact: true },
+    exit: 0, data: { dsn: 'mysql:host=db.example.com;port=3306;dbname=vetcare;charset=utf8mb4', passwordIntact: true, persistent: true },
   });
+});
+
+test('permite desactivar conexiones persistentes solo mediante una opción explícita', () => {
+  const code = `require 'server/database.php'; $c = \\VetCare\\databaseConfiguration(); echo json_encode(['persistent' => $c['persistent']]);`;
+  assert.deepEqual(check({ ...valid, DB_SSL_CA: 'tests/central-database.test.mjs', DB_PERSISTENT: '0' }, code), {
+    exit: 0, data: { persistent: false },
+  });
+  assert.equal(check({ ...valid, DB_SSL_CA: 'tests/central-database.test.mjs', DB_PERSISTENT: 'yes' }).data.code, 'DB_INVALID_CONFIGURATION');
 });

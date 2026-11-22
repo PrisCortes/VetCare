@@ -21,7 +21,7 @@ function historyFilters(array $query):array{
  return ['q'=>trim($search),'from'=>$from,'to'=>$to,'before'=>$before];
 }
 function historyPatient(PDO $db,string $id):array{
- $q=$db->prepare('SELECT p.*,o.name AS owner_name FROM vc_patients p JOIN vc_owners o ON o.id=p.owner_id WHERE p.id=?');$q->execute([$id]);$patient=$q->fetch();if(!$patient)failAccess(404,'PATIENT_NOT_FOUND');return$patient;
+ $q=$db->prepare('SELECT p.*,o.name AS owner_name,o.address AS owner_address,o.locality AS owner_locality FROM vc_patients p JOIN vc_owners o ON o.id=p.owner_id WHERE p.id=?');$q->execute([$id]);$patient=$q->fetch();if(!$patient)failAccess(404,'PATIENT_NOT_FOUND');return$patient;
 }
 function sanitaryTotals(PDO $db,string $patient):array{
  $q=$db->prepare('SELECT (SELECT COUNT(*) FROM vc_vaccinations WHERE patient_id=?) AS vaccinations,(SELECT COUNT(*) FROM vc_dewormings WHERE patient_id=?) AS dewormings');$q->execute([$patient,$patient]);$row=$q->fetch();return ['vaccinations'=>(int)$row['vaccinations'],'dewormings'=>(int)$row['dewormings']];
