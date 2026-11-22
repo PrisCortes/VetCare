@@ -9,6 +9,7 @@ async function offlineAction(store,user,action,input={}, {nowMs=Date.now()}={}){
  const {validateAttention,validCalendarDate,todayMexico}=await import(pathToFileURL(join(__dirname,'..','web','attention-validation.js')).href);
  const all=kind=>store.all(kind),get=(kind,id)=>store.get(kind,id),now=Math.floor(nowMs/1000),today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Mexico_City',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(nowMs));
  const namedPatient=p=>({...p,ownerName:get('owners',p.ownerId)?.name||''});
+ const carnetPatient=p=>{const owner=get('owners',p.ownerId);return {...p,ownerName:owner?.name||'',ownerAddress:owner?.address||'',ownerLocality:owner?.locality||''};};
  const page=(rows,kind)=>{const number=Number(input.page??1);if(!Number.isInteger(number)||number<1||number>10000)fail('Página no válida.');const offset=(number-1)*50;return {[kind]:rows.slice(offset,offset+50),page:number,hasMore:rows.length>offset+50,local:true};};
  const checkPatient=()=>{if(!uuid(input.patientId))fail('Paciente no válido.');const patient=get('patients',input.patientId);if(!patient)fail('Paciente no encontrado.',404);if(patient.version!==input.patientVersion)fail('La ficha cambió. Selecciona de nuevo el paciente.',409);return patient;};
  if(action==='owners'||action==='patients'){
@@ -43,6 +44,9 @@ async function offlineAction(store,user,action,input={}, {nowMs=Date.now()}={}){
   const patient=checkPatient();let birth=patient.birthDate,correction=null;
   if(input.id){correction=get('consultations',input.id);if(!correction||correction.patientId!==patient.id||correction.version!==input.version)fail('Consulta desactualizada.',409);birth=correction.ageSnapshot.birthDate;}
   if(!patient.active&&!correction)fail('Paciente inactivo.',409);const validation=validateAttention(input,{birthDate:birth,today});if(!validation.valid){const error=new Error('Revisa los campos indicados.');error.status=422;error.fields=validation.errors;throw error;}return {validated:true,saved:false,local:true,patient:namedPatient(patient),data:validation.data};
+ }
+ if(action==='carnet'){
+  if(!uuid(input.patientId))fail('Paciente no válido.');const patient=get('patients',input.patientId);if(!patient)fail('Paciente no encontrado.',404);return {patient:carnetPatient(patient),local:true};
  }
  if(['consultations','history','consultationVersions'].includes(action)){
   const patient=get('patients',input.patientId);if(!patient)fail('Paciente no encontrado.',404);const authors=new Map(all('authors').map(author=>[author.id,author.name]));authors.set(user.id,user.name);
