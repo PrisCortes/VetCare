@@ -6,7 +6,7 @@ function ensure(bool $value):void{if(!$value)throw new RuntimeException('ASSERTI
 function rejects(callable $action,string $reason):void{try{$action();}catch(\VetCare\AccessError $error){ensure($error->reason===$reason);return;}throw new RuntimeException('EXPECTED_REJECTION');}
 try{
  $db=\VetCare\centralDatabase();
- foreach(['001_auth','002_owners','003_patients'] as $migration){
+ foreach(['001_auth','002_owners','003_patients','007_owner_accounts'] as $migration){
   $sql=file_get_contents(__DIR__.'/../database/mariadb/'.$migration.'.sql');
   $sql=str_replace('CREATE TABLE IF NOT EXISTS','CREATE TEMPORARY TABLE',$sql);
   $sql=preg_replace('/^\s*FOREIGN KEY[^\r\n]*\r?\n/m','',$sql);
@@ -14,9 +14,9 @@ try{
   foreach(explode(';',$sql) as $statement)if(trim($statement)!=='')$db->exec($statement);
  }
  $actor=\VetCare\createUser($db,['username'=>'test-vet','name'=>'Prueba temporal','password'=>'clave-temporal-de-prueba','role'=>'veterinario']);
- $create=['operationId'=>\VetCare\uuid(),'name'=>"Ana '_%",'phone'=>'+52 00123','address'=>'Apan','locality'=>'Centro'];
+ $create=['operationId'=>\VetCare\uuid(),'name'=>"Ana '_%",'phone'=>'+52 00123','address'=>'Apan','locality'=>'Centro','portalUsername'=>'ana-prueba','portalPassword'=>'clave-segura-de-prueba'];
  $save=function(array $data,bool $new)use($db,$actor):array{$db->beginTransaction();try{$result=\VetCare\saveOwner($db,$actor,$data,$new);$db->commit();return $result;}catch(Throwable $error){$db->rollBack();throw $error;}};
- $first=$save($create,true);ensure($first['version']===1);
+ $first=$save($create,true);ensure($first['version']===1&&$first['portalAccess']===true&&$first['portalUsername']==='ana-prueba');ensure(password_verify('clave-segura-de-prueba',$db->query('SELECT password_hash FROM vc_owner_accounts')->fetchColumn()));
  ensure($save($create,true)===$first);ensure((int)$db->query('SELECT COUNT(*) FROM vc_owners')->fetchColumn()===1);
  rejects(fn()=>$save([...$create,'name'=>'Otra carga'],true),'OPERATION_REUSED');
  $edit=[...$first,'operationId'=>\VetCare\uuid(),'phone'=>'555123','active'=>true];
@@ -29,7 +29,7 @@ try{
  $active=$save([...$inactive,'operationId'=>\VetCare\uuid(),'active'=>true],false);ensure($active['active']&&$active['version']===4);
  ensure(count(\VetCare\listOwners($db,$actor,['q'=>"'_%"])['owners'])===1);
  ensure(count(\VetCare\listOwners($db,$actor,['q'=>"' OR 1=1 --"])['owners'])===0);
- $save([...$create,'operationId'=>\VetCare\uuid()],true);ensure(count(\VetCare\listOwners($db,$actor,[])['owners'])===2);
+ $save([...$create,'operationId'=>\VetCare\uuid(),'portalUsername'=>'ana-prueba-2'],true);ensure(count(\VetCare\listOwners($db,$actor,[])['owners'])===2);
  rejects(fn()=>\VetCare\listOwners($db,['role'=>'otro'],[]),'FORBIDDEN');
- echo "MariaDB: propietarios, persistencia, versiones, reintentos, conflicto, baja y reactivación comprobados en tablas temporales.\n";
+ echo "MariaDB: propietarios, credenciales de portal, persistencia, versiones, reintentos, conflicto, baja y reactivación comprobados en tablas temporales.\n";
 }catch(Throwable){fwrite(STDERR,"No se completó la prueba de propietarios. Revisa db:check y permisos de tablas temporales.\n");exit(1);}
