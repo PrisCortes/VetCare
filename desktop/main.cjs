@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, safeStorage, shell } = require('electron');
 const path = require('node:path');
 const { openLocalStore } = require('./storage.cjs');
 const { createAuthClient } = require('./auth.cjs');
@@ -14,7 +14,16 @@ app.whenReady().then(async () => {
   catch (error) { console.error('No se pudo inicializar SQLite:', error.message); dialog.showErrorBox('VetCare · Almacenamiento', 'No se pudo abrir el almacenamiento local. No se borrará ni reemplazará la base existente. Revisa la terminal.'); app.quit(); return; }
   window = new BrowserWindow({ width: 1280, height: 850, minWidth: 900, minHeight: 650, backgroundColor: '#f7f5ed', show: false, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true } });
   window.setMenuBarVisibility(false);
-  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  const isPublicConsultationDocument = candidate => {
+    try {
+      const url = new URL(candidate);
+      return url.origin === origin && /^\/api\/v1\/public\/consultations\/[a-f0-9]{64}\.pdf$/.test(url.pathname);
+    } catch { return false; }
+  };
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    if (isPublicConsultationDocument(url)) void shell.openExternal(url);
+    return { action: 'deny' };
+  });
   window.webContents.on('will-navigate', (event, url) => { if (new URL(url).origin !== origin) event.preventDefault(); });
   window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   const authorize = event => {

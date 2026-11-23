@@ -36,6 +36,13 @@ test('no permite conexión sin certificado CA legible', () => {
   }
 });
 
+test('acepta una CA codificada para el contenedor sin incluirla en la imagen', () => {
+  const code = `require 'server/database.php'; $c = \\VetCare\\databaseConfiguration(); echo json_encode(['caReadable' => is_file($c['ca'])]);`;
+  assert.deepEqual(check({ ...valid, DB_SSL_CA_BASE64: Buffer.from('certificate fixture').toString('base64') }, code), {
+    exit: 0, data: { caReadable: true },
+  });
+});
+
 test('opciones construyen DSN UTF-8, conservan la contraseña y reutilizan conexiones TLS', () => {
   const code = `require 'server/database.php'; $c = \\VetCare\\databaseConfiguration(); echo json_encode(['dsn' => $c['dsn'], 'passwordIntact' => $c['password'] === 'secret-password', 'persistent' => $c['persistent']]);`;
   assert.deepEqual(check({ ...valid, DB_SSL_CA: 'tests/central-database.test.mjs' }, code), {

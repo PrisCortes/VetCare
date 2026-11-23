@@ -5,6 +5,7 @@ import {readFile} from 'node:fs/promises';
 test('recarga con sesión: mantiene oculto el login hasta autenticar; directorios se reutilizan solo en memoria',async()=>{
  const html=await readFile(new URL('../web/index.html',import.meta.url),'utf8');
  assert.match(html,/<section hidden id="login-gate"/);assert.match(html,/id="auth-loading"/);
+ assert.match(html,/img-src 'self' data:/);
  const previous={window:globalThis.window,document:globalThis.document,fetch:globalThis.fetch,interval:globalThis.setInterval};
  const nodes=new Map(),assignments=[],events=new Map(),calls=[];let resolveSession;
  function node(id){if(!nodes.has(id)){let hidden=id==='login-gate';nodes.set(id,{get hidden(){return hidden;},set hidden(value){hidden=value;if(id==='login-gate')assignments.push(value);},textContent:'',open:false,addEventListener(){}});}return nodes.get(id);}

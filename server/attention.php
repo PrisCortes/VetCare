@@ -14,6 +14,10 @@ function frequencyMeasurement(mixed $value):?int{
  if(!is_string($value))throw new \InvalidArgumentException('Escribe un entero positivo.');$value=trim($value);if($value==='')return null;
  if(!preg_match('/\A\d{1,10}\z/D',$value)||(int)$value<1||(int)$value>2147483647)throw new \InvalidArgumentException('Escribe un entero positivo, sin decimales.');return (int)$value;
 }
+function bloodPressureMeasurement(mixed $value):?string{
+ if(!is_string($value))throw new \InvalidArgumentException('Escribe la presión como sistólica/diastólica.');$value=trim($value);if($value==='')return null;
+ if(!preg_match('/\A(\d{2,3})\s*\/\s*(\d{2,3})\z/D',$value,$parts)||(int)$parts[1]<1||(int)$parts[1]>300||(int)$parts[2]<1||(int)$parts[2]>300)throw new \InvalidArgumentException('Usa una presión entre 1 y 300 mmHg en formato 120/80.');return ((int)$parts[1]).'/'.((int)$parts[2]);
+}
 function attentionFields(array $input,?string $birthDate=null,?string $today=null):array{
  $today??=(new \DateTimeImmutable('today',new \DateTimeZone('America/Mexico_City')))->format('Y-m-d');
  $errors=[];$data=['kind'=>$input['kind']??null];
@@ -27,7 +31,7 @@ function attentionFields(array $input,?string $birthDate=null,?string $today=nul
  $numeric=static function(string $key,callable $parse)use($input,&$data,&$errors):void{try{$data[$key]=$parse($input[$key]??'');}catch(\InvalidArgumentException $error){$errors[$key]=$error->getMessage();}};
  $text('notes');
  if($data['kind']==='consulta'){
-  $text('reason',true);$text('treatment');$numeric('weight',fn($value)=>scaledMeasurement($value,3,true));$numeric('temperature',fn($value)=>scaledMeasurement($value,2));$numeric('heartRate','VetCare\\frequencyMeasurement');$numeric('respiratoryRate','VetCare\\frequencyMeasurement');
+  $text('reason',true);$text('treatment');$numeric('weight',fn($value)=>scaledMeasurement($value,3,true));$numeric('temperature',fn($value)=>scaledMeasurement($value,2));$numeric('heartRate','VetCare\\frequencyMeasurement');$numeric('respiratoryRate','VetCare\\frequencyMeasurement');$numeric('bloodPressure','VetCare\\bloodPressureMeasurement');
  }elseif(in_array($data['kind'],['vacuna','desparasitacion'],true)){
   $text('product',true,200);if($data['kind']==='vacuna')$text('application',false,200);else $numeric('weight',fn($value)=>scaledMeasurement($value,3,true));
   $next=$input['nextDate']??'';if($next!==''&&(!$calendar($next)||($calendar($date)&&$next<$date)))$errors['nextDate']='La próxima fecha debe ser válida y no anterior a la aplicación.';$data['nextDate']=$next===''?null:$next;

@@ -13,10 +13,11 @@ test('T38: Electron integra web local o central sin exponer secretos de backend'
     readFile(new URL('../desktop/auth.cjs', import.meta.url), 'utf8'),
   ]);
   assert.match(main, /contextIsolation: true/); assert.match(main, /sandbox: true/); assert.doesNotMatch(preload, /require\(['"]node:/);
+  assert.match(main, /shell\.openExternal/); assert.match(main, /isPublicConsultationDocument/);
   assert.match(preload, /vetcare:auth/); assert.match(preload, /vetcare:offline/); assert.match(page, /INTEGRACIÓN · T38/);
   assert.match(authClient, /carnet:\['GET','\/carnet'\]/);
   assert.deepEqual(applicationRuntime({ VETCARE_APP_URL: 'https://vetcare.example/' }), { source: 'https://vetcare.example', mode: 'central' });
-  assert.deepEqual(desktopEnvironment({ DB_HOST: 'secret', DB_PASSWORD: 'secret', OFFLINE_PRIVATE_KEY: 'key', VETCARE_APP_URL: 'https://vetcare.example/' }), { VETCARE_APP_URL: 'https://vetcare.example/' });
+  assert.deepEqual(desktopEnvironment({ DB_HOST: 'secret', DB_PASSWORD: 'secret', OFFLINE_PRIVATE_KEY: 'key', OFFLINE_PRIVATE_KEY_BASE64: 'key-base64', VETCARE_APP_URL: 'https://vetcare.example/' }), { VETCARE_APP_URL: 'https://vetcare.example/' });
 });
 
 test('T41: al recuperar la red y al cerrar normalmente se intenta enviar la cola durable', async () => {

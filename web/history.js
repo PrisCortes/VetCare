@@ -6,7 +6,7 @@ export function historicalAge(snapshot){
  if(snapshot?.ageValue!==null&&snapshot?.ageValue!==undefined)return `Edad estimada registrada: ${snapshot.ageValue} ${{dias:'días',meses:'meses',anios:'años'}[snapshot.ageUnit]||''} · Referencia ${snapshot.ageReference}`;
  return 'Edad desconocida al registrar esta atención';
 }
-export function historyCard(record){return `<article class="panel history-card"><div class="panel-heading"><h2>${e(record.date)} · ${e(record.reason)}</h2><span class="badge neutral">Versión ${record.version}</span></div>${consultationPreview(record)}<p>${e(historicalAge(record.ageSnapshot))}</p><p>Registró: ${e(record.createdByName)} · Última corrección: ${e(record.updatedByName)}</p><div class="form-actions"><button class="button secondary" type="button" data-history-versions="${e(record.id)}">Ver versiones</button><button class="button secondary" type="button" data-history-correct="${e(record.id)}">Corregir consulta</button></div></article>`;}
+export function historyCard(record){return `<article class="panel history-card"><div class="panel-heading"><h2>${e(record.date)} · ${e(record.reason)}</h2><span class="badge neutral">Versión ${record.version}</span></div>${consultationPreview(record)}<p>${e(historicalAge(record.ageSnapshot))}</p><p>Registró: ${e(record.createdByName)} · Última corrección: ${e(record.updatedByName)}</p><div class="form-actions"><button class="button secondary" type="button" data-history-versions="${e(record.id)}">Ver versiones</button><button class="button secondary" type="button" data-history-correct="${e(record.id)}">Corregir consulta</button>${isOffline()?'':`<button class="button secondary" type="button" data-history-document="${e(record.id)}">Generar QR</button>`}</div></article>`;}
 export function sanitaryHistoryCard(record){const label=record.kind==='vacuna'?'Vacunación':'Desparasitación';return `<article class="panel history-card sanitary-history-card"><div class="panel-heading"><h2>${e(record.date)} · ${label}</h2><span class="badge neutral">Versión ${record.version}</span></div>${sanitaryPreview(record)}<p>Registró: ${e(record.createdByName)} · Última corrección: ${e(record.updatedByName)}</p></article>`;}
 export function historyPage(patient){
  if(!patient)return '<section class="panel empty"><h1>Selecciona un paciente</h1><p>Desde Pacientes, abre Ver expediente en la ficha que corresponda.</p><button class="button" type="button" data-route="pacientes">Ir a pacientes</button></section>';
@@ -44,6 +44,10 @@ export function initializeHistory(panel,initialPatient,{onNew=()=>{},onCorrect=(
    find('history-version-rows').insertAdjacentHTML('beforeend',html);before=result.nextBefore;find('history-more-versions').hidden=!before;find('history-versions-notice').textContent=result.versions.length?'Versiones conservadas; consulta de solo lectura.':'No hay versiones disponibles.';box.scrollIntoView({block:'nearest'});
   }catch(error){if(panel.isConnected&&run===versionSequence){find('history-versions-notice').textContent=error.message;find('history-more-versions').hidden=!before;}}
  }
+ async function documentQr(record){
+  const dialog=document.getElementById('consultation-qr-dialog'),image=document.getElementById('consultation-qr-image'),link=document.getElementById('consultation-qr-link');if(!dialog||!image||!link||!globalThis.QRCode)throw new Error('No se pudo preparar el código QR.');
+  find('history-notice').textContent='Generando código QR…';const result=await request('consultationDocument',{patientId:patient.id,consultationId:record.id,version:record.version});image.src=await globalThis.QRCode.toDataURL(result.url,{width:260,margin:1,errorCorrectionLevel:'M'});link.href=result.url;dialog.showModal();find('history-notice').textContent='Código QR generado.';
+ }
  let filterTimer;const queueFilter=()=>{clearTimeout(filterTimer);filterTimer=setTimeout(()=>{stack=[null];load();},180);};
  find('history-filters').addEventListener('input',queueFilter);find('history-filters').addEventListener('change',queueFilter);find('history-filters').addEventListener('submit',event=>{event.preventDefault();stack=[null];load();});
  panel.addEventListener('click',event=>{
@@ -53,6 +57,7 @@ export function initializeHistory(panel,initialPatient,{onNew=()=>{},onCorrect=(
   if(button.id==='history-new'&&patient.active)onNew(patient);
   if(button.id==='history-carnet')onCarnet(patient);
   if(button.dataset.historyCorrect){const record=rows.find(item=>item.id===button.dataset.historyCorrect);if(record)onCorrect(patient,record);}
+  if(button.dataset.historyDocument){const record=rows.find(item=>item.id===button.dataset.historyDocument);if(record)documentQr(record).catch(error=>{find('history-notice').textContent=error.message;});}
   if(button.dataset.historyVersions)versions(button.dataset.historyVersions);
   if(button.id==='history-more-versions'&&versionId&&before)versions(versionId,true);
  });

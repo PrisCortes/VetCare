@@ -53,6 +53,7 @@ document.addEventListener('click',event=>{
  if(button.dataset.carnet){carnetTab=button.dataset.carnet;render();}
  if(button.dataset.form)openForm(button.dataset.form);
  if(button.hasAttribute('data-close-dialog'))closeDialog();
+ if(button.hasAttribute('data-close-consultation-qr'))document.getElementById('consultation-qr-dialog')?.close();
 });
 document.addEventListener('input',event=>{
  if(event.target.id==='patient-search'){query=event.target.value;document.getElementById('patient-rows').innerHTML=patientRows(state,query,species);}

@@ -15,6 +15,12 @@ export function integerMeasurement(value){
  if(!/^\d{1,10}$/.test(text)||Number(text)<1||Number(text)>2147483647)throw new Error('Escribe un entero positivo, sin decimales.');
  return Number(text);
 }
+export function bloodPressureMeasurement(value){
+ if(typeof value!=='string')throw new Error('Escribe la presión como sistólica/diastólica.');
+ const match=value.trim().match(/^(\d{2,3})\s*\/\s*(\d{2,3})$/);if(!match)return value.trim()===''?null:(() => { throw new Error('Usa el formato 120/80.') })();
+ const [systolic,diastolic]=match.slice(1).map(Number);if(systolic<1||systolic>300||diastolic<1||diastolic>300)throw new Error('La presión está fuera de rango.');
+ return `${systolic}/${diastolic}`;
+}
 export function validCalendarDate(value){
  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)||value<'1000-01-01')return false;
  const date=new Date(value+'T12:00:00Z');return !Number.isNaN(date.valueOf())&&date.toISOString().slice(0,10)===value;
@@ -30,7 +36,7 @@ export function validateAttention(input,{today=todayMexico(),birthDate=null}={})
  const numeric=(key,parser)=>{try{data[key]=parser(input[key]??'');}catch(error){errors[key]=error.message;}};
  text('notes');
  if(input.kind==='consulta'){
-  text('reason',true);text('treatment');numeric('weight',value=>decimalInteger(value,3,{positive:true}));numeric('temperature',value=>decimalInteger(value,2));numeric('heartRate',integerMeasurement);numeric('respiratoryRate',integerMeasurement);
+  text('reason',true);text('treatment');numeric('weight',value=>decimalInteger(value,3,{positive:true}));numeric('temperature',value=>decimalInteger(value,2));numeric('heartRate',integerMeasurement);numeric('respiratoryRate',integerMeasurement);numeric('bloodPressure',bloodPressureMeasurement);
  }else if(input.kind==='vacuna'||input.kind==='desparasitacion'){
   text('product',true);if(typeof input.product==='string'&&[...input.product].length>200)errors.product='Usa como máximo 200 caracteres.';
   if(input.kind==='vacuna'){text('application');if(typeof input.application==='string'&&[...input.application].length>200)errors.application='Usa como máximo 200 caracteres.';}

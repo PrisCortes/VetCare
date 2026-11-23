@@ -14,6 +14,6 @@ function applicationRuntime(environment) {
   throw new Error('Inicia desarrollo mediante npm run dev:desktop o configura VETCARE_APP_URL para la aplicación central.');
 }
 function desktopEnvironment(environment) {
-  return Object.fromEntries(Object.entries(environment).filter(([key]) => !key.startsWith('DB_') && key !== 'OFFLINE_PRIVATE_KEY'));
+  return Object.fromEntries(Object.entries(environment).filter(([key]) => !key.startsWith('DB_') && !key.startsWith('OFFLINE_PRIVATE_KEY')));
 }
 module.exports = { applicationRuntime, desktopEnvironment };

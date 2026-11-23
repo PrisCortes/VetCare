@@ -11,5 +11,5 @@ test('la aplicación distribuida solo acepta el origen HTTPS central', () => {
 });
 
 test('el lanzador central no entrega secretos de base ni llave offline a Electron', () => {
-  assert.deepEqual(desktopEnvironment({ DB_HOST: 'private', DB_PASSWORD: 'secret', OFFLINE_PRIVATE_KEY: 'private-key', VETCARE_APP_URL: 'https://vetcare.example/', PATH: 'allowed' }), { VETCARE_APP_URL: 'https://vetcare.example/', PATH: 'allowed' });
+  assert.deepEqual(desktopEnvironment({ DB_HOST: 'private', DB_PASSWORD: 'secret', OFFLINE_PRIVATE_KEY: 'private-key', OFFLINE_PRIVATE_KEY_BASE64: 'private-key-base64', VETCARE_APP_URL: 'https://vetcare.example/', PATH: 'allowed' }), { VETCARE_APP_URL: 'https://vetcare.example/', PATH: 'allowed' });
 });

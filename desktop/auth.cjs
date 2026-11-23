@@ -6,7 +6,7 @@ function createAuthClient(origin) {
     users: ['GET','/admin/users'], createUser: ['POST','/admin/users'], updateUser: ['PATCH','/admin/users'],
     owners: ['GET','/owners'], createOwner: ['POST','/owners'], updateOwner: ['PATCH','/owners'],
     patients: ['GET','/patients'], createPatient: ['POST','/patients'], updatePatient: ['PATCH','/patients'],
-    validateAttention: ['POST','/attention/validate'],consultations:['GET','/consultations'],createConsultation:['POST','/consultations'],updateConsultation:['PATCH','/consultations'],sanitaryEvents:['GET','/sanitary-events'],createSanitaryEvent:['POST','/sanitary-events'],updateSanitaryEvent:['PATCH','/sanitary-events'],
+    validateAttention: ['POST','/attention/validate'],consultations:['GET','/consultations'],createConsultation:['POST','/consultations'],updateConsultation:['PATCH','/consultations'],consultationDocument:['POST','/consultations/document'],sanitaryEvents:['GET','/sanitary-events'],createSanitaryEvent:['POST','/sanitary-events'],updateSanitaryEvent:['PATCH','/sanitary-events'],
     history:['GET','/history'],carnet:['GET','/carnet'],consultationVersions:['GET','/consultation-versions'],offlineBootstrap:['POST','/offline/bootstrap'],syncPush:['POST','/sync/push']
   };
   const client=async (action, data, options={}) => {

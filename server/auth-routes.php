@@ -34,7 +34,7 @@ function authRoute(string $path, string $method): never {
         '/api/v1/owners'=>['GET','POST','PATCH'],
         '/api/v1/patients'=>['GET','POST','PATCH'],
         '/api/v1/attention/validate'=>['POST'],
-        '/api/v1/consultations'=>['GET','POST','PATCH'],
+        '/api/v1/consultations'=>['GET','POST','PATCH'], '/api/v1/consultations/document'=>['POST'],
         '/api/v1/sanitary-events'=>['GET','POST','PATCH'],
         '/api/v1/sync/push'=>['POST'],
         '/api/v1/history'=>['GET'],
@@ -70,6 +70,9 @@ function authRoute(string $path, string $method): never {
             finally{$q=$db->prepare('SELECT RELEASE_LOCK(?)');$q->execute([$lockName]);}
             if(!$result['saved'])respond(422,['error'=>['code'=>'INVALID_ATTENTION','message'=>'Revisa los campos indicados.'],'fields'=>$result['fields']]);
             respond($method==='POST'?201:200,$result);
+        }
+        if($path==='/api/v1/consultations/document'){
+            $data=authBody();$db->beginTransaction();try{$session=\VetCare\authenticated($db,$token,false);$document=\VetCare\createConsultationDocument($db,$session,$data);$db->commit();}catch(Throwable $error){if($db->inTransaction())$db->rollBack();throw $error;}respond(201,$document);
         }
         if($path==='/api/v1/sanitary-events'){
             if($method==='GET')respond(200,\VetCare\listSanitaryEvents($db,$session,$_GET));

@@ -8,6 +8,18 @@ use Pdo\Mysql;
 use RuntimeException;
 
 /** No abre conexiones ni acepta fragmentos de DSN del cliente. */
+function databaseCertificatePath(): string {
+    $encoded = getenv('DB_SSL_CA_BASE64');
+    if (is_string($encoded) && $encoded !== '') {
+        $certificate = base64_decode($encoded, true);
+        if (!is_string($certificate) || $certificate === '') return '';
+        $path = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'vetcare-db-ca-' . hash('sha256', $certificate) . '.pem';
+        if (!is_file($path) && (@file_put_contents($path, $certificate, LOCK_EX) === false || !@chmod($path, 0600))) return '';
+        return $path;
+    }
+    $path = getenv('DB_SSL_CA') ?: '';
+    return is_file($path) ? $path : '';
+}
 function databaseConfiguration(): array {
     $host = getenv('DB_HOST') ?: '';
     $name = getenv('DB_NAME') ?: '';
@@ -26,8 +38,8 @@ function databaseConfiguration(): array {
     if (!ctype_digit($port) || (int)$port < 1 || (int)$port > 65535) {
         throw new RuntimeException('DB_INVALID_CONFIGURATION');
     }
-    $ca = getenv('DB_SSL_CA') ?: '';
-    $handle = $ca !== '' && is_file($ca) ? @fopen($ca, 'rb') : false;
+    $ca = databaseCertificatePath();
+    $handle = $ca !== '' ? @fopen($ca, 'rb') : false;
     if ($handle === false) {
         throw new RuntimeException('DB_CA_REQUIRED');
     }

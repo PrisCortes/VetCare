@@ -9,5 +9,5 @@ test('consulta exige identidad de operación, paciente y versión sin aceptar va
  const r=spawnSync(php.binary,[...php.args,'-r',code],{cwd:root,encoding:'utf8',windowsHide:true});assert.equal(r.status,0,r.stderr);assert.equal(r.stderr,'');assert.ok(r.stdout.endsWith('422422422'));
 });
 test('consulta recuperada se presenta con unidades y texto escapado',()=>{
- const html=consultationPreview({date:'2026-01-01',reason:'<script>bad()</script>',treatment:'A & B',notes:null,weight:1,temperature:3825,heartRate:80,respiratoryRate:null});assert.match(html,/0.001 kg/);assert.match(html,/38.25 °C/);assert.ok(!html.includes('<script>'));assert.match(html,/A &amp; B/);assert.match(html,/Sin observaciones/);
+ const html=consultationPreview({date:'2026-01-01',reason:'<script>bad()</script>',treatment:'A & B',notes:null,weight:1,temperature:3825,heartRate:80,respiratoryRate:null,bloodPressure:'120/80'});assert.match(html,/0.001 kg/);assert.match(html,/38.25 °C/);assert.match(html,/120\/80 mmHg/);assert.ok(!html.includes('<script>'));assert.match(html,/A &amp; B/);assert.match(html,/Sin observaciones/);
 });

@@ -11,7 +11,7 @@ export const storageLabel=()=>isOffline()?'este equipo · pendiente de sincroniz
 export const invalidateDirectoryCache=()=>clearDirectories();
 const actions = { login:['POST','/auth/login'], session:['GET','/auth/session'], logout:['POST','/auth/logout'], users:['GET','/admin/users'], createUser:['POST','/admin/users'], updateUser:['PATCH','/admin/users'], owners:['GET','/owners'],createOwner:['POST','/owners'],updateOwner:['PATCH','/owners'] };
 Object.assign(actions,{patients:['GET','/patients'],createPatient:['POST','/patients'],updatePatient:['PATCH','/patients'],validateAttention:['POST','/attention/validate']});
-Object.assign(actions,{consultations:['GET','/consultations'],createConsultation:['POST','/consultations'],updateConsultation:['PATCH','/consultations']});
+Object.assign(actions,{consultations:['GET','/consultations'],createConsultation:['POST','/consultations'],updateConsultation:['PATCH','/consultations'],consultationDocument:['POST','/consultations/document']});
 Object.assign(actions,{sanitaryEvents:['GET','/sanitary-events'],createSanitaryEvent:['POST','/sanitary-events'],updateSanitaryEvent:['PATCH','/sanitary-events']});
 Object.assign(actions,{history:['GET','/history'],carnet:['GET','/carnet'],consultationVersions:['GET','/consultation-versions']});
 export async function request(action, data, {fresh=false}={}) {

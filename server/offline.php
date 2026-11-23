@@ -2,9 +2,19 @@
 declare(strict_types=1);
 namespace VetCare;
 use PDO;
+function offlinePrivateKeyPem(): string|false {
+ $encoded=getenv('OFFLINE_PRIVATE_KEY_BASE64');
+ if(is_string($encoded)&&$encoded!==''){
+  $pem=base64_decode($encoded,true);return is_string($pem)&&$pem!==''?$pem:false;
+ }
+ $pem=getenv('OFFLINE_PRIVATE_KEY_PEM');
+ if(is_string($pem)&&$pem!=='')return $pem;
+ $path=getenv('OFFLINE_PRIVATE_KEY')?:'';
+ return $path!==''?@file_get_contents($path):false;
+}
 function issueOfflineLease(array $actor,string $device):array{
  requirePermission($actor,'clinical.write');recentAuthentication($actor);requireUuid($device);
- $path=getenv('OFFLINE_PRIVATE_KEY')?:'';$pem=$path!==''?@file_get_contents($path):false;
+ $pem=offlinePrivateKeyPem();
  if($pem===false)failAccess(503,'OFFLINE_KEY_REQUIRED');$key=openssl_pkey_get_private($pem);if($key===false)failAccess(503,'OFFLINE_KEY_REQUIRED');
  $details=openssl_pkey_get_details($key);if(!$details||$details['type']!==OPENSSL_KEYTYPE_RSA||$details['bits']<2048)failAccess(503,'OFFLINE_KEY_REQUIRED');
  $now=time();$payload=['schema'=>1,'issuer'=>allowedOrigin(),'deviceId'=>$device,'user'=>publicUser($actor),'permissions'=>['clinical.read','clinical.write'],'issuedAt'=>$now,'expiresAt'=>$now+72*3600];

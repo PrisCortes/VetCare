@@ -1,7 +1,8 @@
 import { createServer, request as httpRequest } from 'node:http';
-import { readFile, realpath } from 'node:fs/promises';
+import { mkdir, readFile, realpath } from 'node:fs/promises';
 import { resolve, sep, extname } from 'node:path';
 import { spawn } from 'node:child_process';
+import { build } from 'esbuild';
 import { root, phpCommand } from './environment.mjs';
 
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
@@ -14,6 +15,9 @@ export async function startServices({ webPort = 5173, apiPort = 8787 } = {}) {
   let spawnError; child.on('error', error => { spawnError = error; });
   const stopChild = () => { if (child.exitCode === null && !child.killed) child.kill(); };
   const publicRoot = await realpath(resolve(root, 'web'));
+  const qrCodeFile = resolve(root, 'storage', 'qrcode.min.js');
+  await mkdir(resolve(root,'storage'),{recursive:true});
+  await build({entryPoints:[resolve(root,'web','qrcode-entry.js')],bundle:true,minify:true,format:'iife',outfile:qrCodeFile});
   const server = createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'no-store');
@@ -34,6 +38,7 @@ export async function startServices({ webPort = 5173, apiPort = 8787 } = {}) {
       req.pipe(upstream); return;
     }
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }); res.end(); return; }
+    if (path === '/qrcode.min.js') { try { const body = await readFile(qrCodeFile);res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Content-Length': body.length });res.end(req.method === 'HEAD' ? undefined : body); } catch { res.writeHead(500);res.end('No se pudo cargar el generador QR.'); } return; }
     const candidate = resolve(publicRoot, '.' + (path === '/' ? '/index.html' : path));
     try {
       const actual = await realpath(candidate);
