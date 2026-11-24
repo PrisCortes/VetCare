@@ -175,8 +175,9 @@ function authRoute(string $path, string $method): never {
         ];
         if ($error->status===429) header('Retry-After: 900');
         respond($error->status,['error'=>['code'=>$error->reason,'message'=>$messages[$error->reason] ?? 'No se pudo completar la solicitud.']]);
-    } catch (Throwable) {
+    } catch (Throwable $error) {
         if (isset($db) && $db->inTransaction()) $db->rollBack();
+        error_log('VetCare: solicitud no disponible [' . \VetCare\databaseDiagnosticCode($error) . '].');
         respond(503,['error'=>['code'=>'SERVICE_UNAVAILABLE','message'=>'El servicio central no está disponible. Revisa la conexión y ejecuta db:migrate si hay tablas pendientes.']]);
     }
 }

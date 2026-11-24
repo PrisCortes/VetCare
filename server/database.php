@@ -79,6 +79,19 @@ function centralDatabase(): PDO {
     return $connection;
 }
 
+/** Clasifica fallos sin registrar DSN, usuario, contraseña ni detalle del proveedor. */
+function databaseDiagnosticCode(\Throwable $error): string {
+    $reason = $error->getMessage();
+    if (in_array($reason, ['DB_NOT_CONFIGURED', 'DB_INVALID_CONFIGURATION', 'DB_CA_REQUIRED', 'DB_TLS_REQUIRED'], true)) return $reason;
+    $message = strtolower($reason);
+    if (str_contains($message, 'access denied') || str_contains($message, '[1045]')) return 'DB_AUTH_FAILED';
+    if (str_contains($message, 'unknown database') || str_contains($message, '[1049]')) return 'DB_DATABASE_NOT_FOUND';
+    if (str_contains($message, 'certificate') || str_contains($message, 'ssl') || str_contains($message, 'tls') || str_contains($message, '[2026]')) return 'DB_TLS_HANDSHAKE_FAILED';
+    if (str_contains($message, 'getaddrinfo')) return 'DB_DNS_FAILED';
+    if (str_contains($message, '[2002]') || str_contains($message, 'connection refused') || str_contains($message, 'timed out')) return 'DB_NETWORK_FAILED';
+    return 'DB_CONNECTION_FAILED';
+}
+
 /** Diagnóstico administrativo: no publica host, usuario, contraseña o error PDO. */
 function checkCentralDatabase(): array {
     try {
@@ -88,8 +101,6 @@ function checkCentralDatabase(): array {
         }
         return ['status' => 'available', 'code' => 'DB_OK', 'tls' => true];
     } catch (\Throwable $error) {
-        $allowed = ['DB_NOT_CONFIGURED', 'DB_INVALID_CONFIGURATION', 'DB_CA_REQUIRED', 'DB_TLS_REQUIRED'];
-        return ['status' => 'unavailable', 'code' => in_array($error->getMessage(), $allowed, true)
-            ? $error->getMessage() : 'DB_CONNECTION_FAILED'];
+        return ['status' => 'unavailable', 'code' => databaseDiagnosticCode($error)];
     }
 }

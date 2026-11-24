@@ -57,3 +57,8 @@ test('permite desactivar conexiones persistentes solo mediante una opción expl�
   });
   assert.equal(check({ ...valid, DB_SSL_CA: 'tests/central-database.test.mjs', DB_PERSISTENT: 'yes' }).data.code, 'DB_INVALID_CONFIGURATION');
 });
+
+test('diagnóstico clasifica fallos de conexión sin incluir secretos', () => {
+  const code = `require 'server/database.php'; echo json_encode([\\VetCare\\databaseDiagnosticCode(new PDOException('SQLSTATE[HY000] [2002] Connection refused')),\\VetCare\\databaseDiagnosticCode(new PDOException('SQLSTATE[HY000] [1045] Access denied'))]);`;
+  assert.deepEqual(check({}, code), { exit: 0, data: ['DB_NETWORK_FAILED', 'DB_AUTH_FAILED'] });
+});
