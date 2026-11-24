@@ -14,6 +14,7 @@ test('contenedor de producción construye la interfaz y expone únicamente recur
  assert.match(dockerfile,/COPY server\/ \/app\/server\//);
  assert.doesNotMatch(dockerfile,/COPY web\/ \/app\/public\//);
  assert.match(caddyfile,/root \* \/app\/public/);
+ assert.match(caddyfile,/@home path \/\s+rewrite @home \/index\.html/);
  assert.match(caddyfile,/rewrite @api \/api\/index\.php/);
  const ignoredLines=new Set(ignored.trim().split(/\r?\n/));
  for(const secret of ['.env','storage','*.pem','*.key'])assert.ok(ignoredLines.has(secret),secret);

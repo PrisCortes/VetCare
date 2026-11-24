@@ -1,5 +1,7 @@
 :{$PORT:80} {
   root * /app/public
+  @home path /
+  rewrite @home /index.html
   @api path /api/*
   rewrite @api /api/index.php
   php_server
