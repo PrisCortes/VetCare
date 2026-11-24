@@ -13,7 +13,11 @@ function applicationRuntime(environment) {
   if (environment.VETCARE_APP_URL) return { source: verifiedHttpsUrl(environment.VETCARE_APP_URL), mode: 'central' };
   throw new Error('Inicia desarrollo mediante npm run dev:desktop o configura VETCARE_APP_URL para la aplicación central.');
 }
+function packagedApplicationEnvironment(environment, configuration) {
+  if (environment.VETCARE_APP_URL || !configuration || typeof configuration.appUrl !== 'string') return environment;
+  return { ...environment, VETCARE_APP_URL: configuration.appUrl };
+}
 function desktopEnvironment(environment) {
   return Object.fromEntries(Object.entries(environment).filter(([key]) => !key.startsWith('DB_') && !key.startsWith('OFFLINE_PRIVATE_KEY')));
 }
-module.exports = { applicationRuntime, desktopEnvironment };
+module.exports = { applicationRuntime, packagedApplicationEnvironment, desktopEnvironment };

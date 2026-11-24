@@ -6,13 +6,16 @@ const require = createRequire(import.meta.url);
 const { applicationRuntime, desktopEnvironment } = require('../desktop/runtime.cjs');
 
 test('T38: Electron integra web local o central sin exponer secretos de backend', async () => {
-  const [main, preload, page, authClient] = await Promise.all([
+  const [main, preload, page, authClient, manifest] = await Promise.all([
     readFile(new URL('../desktop/main.cjs', import.meta.url), 'utf8'),
     readFile(new URL('../desktop/preload.cjs', import.meta.url), 'utf8'),
     readFile(new URL('../web/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../desktop/auth.cjs', import.meta.url), 'utf8'),
+    readFile(new URL('../package.json', import.meta.url), 'utf8'),
   ]);
   assert.match(main, /contextIsolation: true/); assert.match(main, /sandbox: true/); assert.doesNotMatch(preload, /require\(['"]node:/);
+  assert.match(main, /desktop-production\.json/);
+  assert.match(manifest, /web\/attention-validation\.js/);
   assert.match(main, /shell\.openExternal/); assert.match(main, /isPublicConsultationDocument/);
   assert.match(preload, /vetcare:auth/); assert.match(preload, /vetcare:offline/); assert.match(page, /INTEGRACIÓN · T38/);
   assert.match(authClient, /carnet:\['GET','\/carnet'\]/);

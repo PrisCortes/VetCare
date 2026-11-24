@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "VetCare: web PHP y escritorio Windows, preparación T15",
+  "author": "Veterinaria La Vaquita Pinta",
   "type": "module",
   "main": "desktop/main.cjs",
   "engines": {
@@ -12,6 +13,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:desktop": "node scripts/desktop.mjs",
     "desktop:central": "node scripts/desktop-central.mjs",
+    "package:win": "electron-builder --win nsis --x64",
     "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
     "test": "node --test tests/api.test.mjs tests/storage.test.mjs tests/views.test.mjs tests/central-database.test.mjs tests/auth.test.mjs tests/owners.test.mjs tests/patients.test.mjs tests/startup.test.mjs tests/attention.test.mjs tests/consultations.test.mjs tests/public-documents.test.mjs tests/sanitary-events.test.mjs tests/history.test.mjs tests/carnet.test.mjs tests/offline.test.mjs tests/desktop-runtime.test.mjs tests/desktop-integration.test.mjs tests/deployment.test.mjs",
@@ -41,9 +43,45 @@
   },
   "devDependencies": {
     "electron": "^45.3.4",
+    "electron-builder": "^26.18.0",
     "esbuild": "^0.28.2"
   },
   "dependencies": {
     "qrcode": "^1.5.4"
+  },
+  "build": {
+    "appId": "mx.edu.itesa.vetcare",
+    "productName": "VetCare",
+    "directories": {
+      "output": "release/win"
+    },
+    "files": [
+      "desktop/**/*",
+      "web/attention-validation.js",
+      "database/sqlite/**/*",
+      "config/offline-public.pem",
+      "config/desktop-production.json",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "VetCare-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "VetCare"
+    },
+    "publish": null
   }
 }

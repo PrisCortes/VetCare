@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-const { applicationRuntime, desktopEnvironment } = createRequire(import.meta.url)('../desktop/runtime.cjs');
+const { applicationRuntime, packagedApplicationEnvironment, desktopEnvironment } = createRequire(import.meta.url)('../desktop/runtime.cjs');
 
 test('la aplicación distribuida solo acepta el origen HTTPS central', () => {
   assert.deepEqual(applicationRuntime({ VETCARE_APP_URL: 'https://vetcare.example/' }), { source: 'https://vetcare.example', mode: 'central' });
@@ -12,4 +12,10 @@ test('la aplicación distribuida solo acepta el origen HTTPS central', () => {
 
 test('el lanzador central no entrega secretos de base ni llave offline a Electron', () => {
   assert.deepEqual(desktopEnvironment({ DB_HOST: 'private', DB_PASSWORD: 'secret', OFFLINE_PRIVATE_KEY: 'private-key', OFFLINE_PRIVATE_KEY_BASE64: 'private-key-base64', VETCARE_APP_URL: 'https://vetcare.example/', PATH: 'allowed' }), { VETCARE_APP_URL: 'https://vetcare.example/', PATH: 'allowed' });
+});
+
+test('la distribución usa únicamente su origen HTTPS público y permite sustituirlo al probar', () => {
+  assert.deepEqual(packagedApplicationEnvironment({}, { appUrl: 'https://vet-care-sooty.vercel.app' }), { VETCARE_APP_URL: 'https://vet-care-sooty.vercel.app' });
+  assert.deepEqual(packagedApplicationEnvironment({ VETCARE_APP_URL: 'https://staging.example' }, { appUrl: 'https://vet-care-sooty.vercel.app' }), { VETCARE_APP_URL: 'https://staging.example' });
+  assert.deepEqual(packagedApplicationEnvironment({}, {}), {});
 });

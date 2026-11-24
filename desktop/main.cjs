@@ -1,13 +1,19 @@
 const { app, BrowserWindow, ipcMain, dialog, safeStorage, shell } = require('electron');
 const path = require('node:path');
+const { readFileSync } = require('node:fs');
 const { openLocalStore } = require('./storage.cjs');
 const { createAuthClient } = require('./auth.cjs');
 const { createOfflineController } = require('./offline-controller.cjs');
-const { applicationRuntime } = require('./runtime.cjs');
+const { applicationRuntime, packagedApplicationEnvironment } = require('./runtime.cjs');
 let window, storage, offline, closingWindow=false;
+function packagedConfiguration() {
+  if (!app.isPackaged) return null;
+  try { return JSON.parse(readFileSync(path.join(app.getAppPath(), 'config', 'desktop-production.json'), 'utf8')); }
+  catch { return null; }
+}
 app.whenReady().then(async () => {
   let runtime;
-  try { runtime = applicationRuntime(process.env); } catch (error) { console.error(error.message); app.quit(); return; }
+  try { runtime = applicationRuntime(packagedApplicationEnvironment(process.env, packagedConfiguration())); } catch (error) { console.error(error.message); app.quit(); return; }
   const source = runtime.source;
   const origin = new URL(source).origin;
   try { storage = openLocalStore(path.join(app.getPath('userData'), 'storage', 'development', 'preauth-probe')); }
