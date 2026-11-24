@@ -13,6 +13,7 @@ test('contenedor de producción construye la interfaz y expone únicamente recur
  assert.match(dockerfile,/COPY --from=web-build \/build\/dist\/ \/app\/public\//);
  assert.match(dockerfile,/COPY server\/ \/app\/server\//);
  assert.doesNotMatch(dockerfile,/COPY web\/ \/app\/public\//);
+ assert.match(await readFile(new URL('../scripts/build.mjs',import.meta.url),'utf8'),/['"]carnet\.js['"]/);
  assert.match(caddyfile,/root \* \/app\/public/);
  assert.match(caddyfile,/@home path \/\s+rewrite @home \/index\.html/);
  assert.match(caddyfile,/rewrite @api \/api\/index\.php/);
