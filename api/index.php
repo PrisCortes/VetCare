@@ -7,6 +7,10 @@ if (preg_match('/\A\/api\/v1\/public\/consultations\/([a-f0-9]{64})\.pdf\z/D',$p
     require (getenv('VETCARE_SERVER_ROOT') ?: __DIR__ . '/../server') . '/public-documents.php';
     \VetCare\publicConsultationPdf($match[1]);
 }
+if (in_array($path, ['/api/v1/portal/login','/api/v1/portal/session','/api/v1/portal/logout','/api/v1/portal/patients','/api/v1/portal/history','/api/v1/portal/sanitary-events'], true)) {
+    require (getenv('VETCARE_SERVER_ROOT') ?: __DIR__ . '/../server') . '/portal.php';
+    \VetCare\portalRoute($path, $_SERVER['REQUEST_METHOD'] ?? 'GET');
+}
 if (in_array($path, ['/api/v1/auth/login','/api/v1/auth/session','/api/v1/auth/logout','/api/v1/admin/users','/api/v1/access','/api/v1/owners','/api/v1/patients','/api/v1/attention/validate','/api/v1/consultations','/api/v1/consultations/document','/api/v1/sanitary-events','/api/v1/sync/push','/api/v1/history','/api/v1/carnet','/api/v1/consultation-versions','/api/v1/offline/bootstrap'], true)) {
     require (getenv('VETCARE_SERVER_ROOT') ?: __DIR__ . '/../server') . '/auth-routes.php';
     authRoute($path, $_SERVER['REQUEST_METHOD'] ?? 'GET');
