@@ -9,7 +9,7 @@ try {
     if ((int)$db->query("SELECT GET_LOCK('vetcare_auth_admin',10)")->fetchColumn()!==1) throw new RuntimeException('LOCK_FAILED');
     if (($argv[1] ?? '')==='migrate') {
         $db->exec('CREATE TABLE IF NOT EXISTS vc_schema_migrations (version VARCHAR(80) PRIMARY KEY, checksum CHAR(64) NOT NULL, applied_at BIGINT NOT NULL) ENGINE=InnoDB');
-        foreach (['001_auth','002_owners','003_patients','004_consultations','005_sanitary_events','006_conflicts','007_owner_accounts','008_consultation_blood_pressure','009_consultation_documents'] as $migration) {
+        foreach (['001_auth','002_owners','003_patients','004_consultations','005_sanitary_events','006_conflicts','007_owner_accounts','008_consultation_blood_pressure','009_consultation_documents','010_owner_portal_sessions'] as $migration) {
         $sql=file_get_contents(__DIR__.'/../database/mariadb/'.$migration.'.sql');
         if ($sql===false) throw new RuntimeException('MIGRATION_MISSING');
         $sql=str_replace("\r\n","\n",$sql);
